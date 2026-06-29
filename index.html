@@ -311,7 +311,7 @@ textarea{resize:vertical;min-height:90px}
     <p class="step-desc">Wir rufen dein Profil automatisch ab und analysieren es zusammen mit deinen Antworten auf deine Ziele.</p>
     <div class="fg">
       <label class="fl">Dein Name *</label>
-      <input type="text" id="i-name" placeholder="z. B. Anna Müller" autocomplete="name">
+      <input type="text" id="i-name" placeholder="z. B. Anna Müller" autocomplete="name" oninput="onNameInput(this.value)">
     </div>
     <div class="fg">
       <label class="fl">Dein LinkedIn-Profillink *</label>
@@ -535,26 +535,39 @@ function togDK(){
 
 // ── Screenshot auto-fetch ──────────────────────────────
 let fetchDebounce=null;
+function onNameInput(val){
+  // Aktualisiere den Namen in der Profilkarte, wenn die Karte bereits sichtbar ist
+  const preview=document.getElementById('profile-preview');
+  if(preview&&preview.style.display!=='none'){
+    const nameEl=preview.querySelector('[data-name]');
+    if(nameEl) nameEl.textContent=val;
+  }
+}
 function onUrlInput(val){
   clearTimeout(fetchDebounce);
   ssUrl=null; ssReady=false;
   A.autoPhoto=''; A.autoHeadline=''; A.autoDesc=''; A.autoName='';
   setFetch('');
-  // Reset preview & disable button until profile loads
+  // Hide preview & disable button when URL changes
   const preview=document.getElementById('profile-preview');
   if(preview){preview.style.display='none';preview.innerHTML='';}
   const btn=document.getElementById('s1-weiter');
   if(btn){btn.disabled=true;btn.style.opacity='.4';btn.style.cursor='not-allowed';}
   if(val.length>20 && val.includes('linkedin')){
-    fetchDebounce=setTimeout(()=>tryFetch(val.trim()),1000);
+    // Sofort Basiskarte anzeigen (mit Name + URL), dann im Hintergrund Daten nachladen
+    fetchDebounce=setTimeout(()=>{
+      A.url=val.trim();
+      showProfileCard(); // Zeigt sofort die Karte und aktiviert den Button
+      tryFetch(val.trim()); // Versucht Foto/Headline nachzuladen (optional)
+    }, 600);
   }
 }
 
 let psPromise = null; // unused, kept for compat
 
 async function tryFetch(url){
+  // Hintergrund-Enrichment: versucht Foto & Headline nachzuladen und aktualisiert die Karte
   const clean=url.split('?')[0].replace(/\/$/,'');
-  setFetch('loading','Profil wird geladen…');
 
   function decEnt(s){
     return (s||'').replace(/&amp;/g,'&').replace(/&lt;/g,'<')
@@ -572,29 +585,28 @@ async function tryFetch(url){
     }
   }
 
-  // ── 1. Microlink Metadata API (sauber, kein CORS-Problem) ──
+  function applyEnrichment(){
+    if(A.autoHeadline||A.autoPhoto||A.autoDesc){
+      showProfileCard(); // Karte mit echten Daten aktualisieren
+      const inp=document.getElementById('slogan-input');
+      if(inp&&!inp.value&&A.autoHeadline) inp.value=A.autoHeadline;
+      if(A.autoPhoto){ ssUrl=A.autoPhoto; ssReady=true; }
+    }
+  }
+
+  // ── 1. Microlink Metadata API ──
   try{
     const r=await Promise.race([
       fetch(`https://api.microlink.io/?url=${encodeURIComponent(clean)}`),
-      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),12000))
+      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),10000))
     ]);
     const d=await r.json();
     if(d.status==='success'&&d.data){
       parseTitle(d.data.title||'');
       if(d.data.description) A.autoDesc=decEnt(d.data.description);
       const photo=d.data.image?.url||'';
-      if(photo&&photo.startsWith('http')){
-        A.autoPhoto=photo; ssUrl=photo; ssReady=true;
-        const thumb=document.getElementById('up-thumb');
-        if(thumb&&!thumb.src.startsWith('data:')){thumb.src=photo;thumb.style.display='block';}
-      }
-      if(A.autoHeadline||A.autoPhoto){
-        const inp=document.getElementById('slogan-input');
-        if(inp&&!inp.value&&A.autoHeadline) inp.value=A.autoHeadline;
-        setFetch('ok',`✓ Profil geladen`);
-        showProfileCard();
-        return;
-      }
+      if(photo&&photo.startsWith('http')) A.autoPhoto=photo;
+      if(A.autoHeadline||A.autoPhoto){ applyEnrichment(); return; }
     }
   }catch(e){}
 
@@ -607,7 +619,7 @@ async function tryFetch(url){
     try{
       const r=await Promise.race([
         fetch(proxyUrl),
-        new Promise((_,rej)=>setTimeout(()=>rej('timeout'),10000))
+        new Promise((_,rej)=>setTimeout(()=>rej('timeout'),8000))
       ]);
       const json=await r.json();
       const htmlStr=typeof(json.contents||json)==='string'?(json.contents||json):'';
@@ -622,33 +634,18 @@ async function tryFetch(url){
 
       if(titleM) parseTitle(titleM[1]);
       if(descM) A.autoDesc=decEnt(descM[1]);
-      if(imgM&&imgM[1]&&imgM[1].startsWith('http')){
-        A.autoPhoto=imgM[1]; ssUrl=imgM[1]; ssReady=true;
-        const thumb=document.getElementById('up-thumb');
-        if(thumb&&!thumb.src.startsWith('data:')){thumb.src=imgM[1];thumb.style.display='block';}
-      }
-      if(A.autoHeadline||A.autoPhoto){
-        const inp=document.getElementById('slogan-input');
-        if(inp&&!inp.value&&A.autoHeadline) inp.value=A.autoHeadline;
-        setFetch('ok',`✓ Profil geladen`);
-        showProfileCard();
-        return;
-      }
+      if(imgM&&imgM[1]&&imgM[1].startsWith('http')) A.autoPhoto=imgM[1];
+      if(A.autoHeadline||A.autoPhoto){ applyEnrichment(); return; }
     }catch(e){ continue; }
   }
-
-  // ── Alle Quellen gescheitert → manueller Upload erlauben ──
-  setFetch('warn','Profil konnte nicht automatisch geladen werden. Bitte Screenshot hochladen (<strong>Cmd+Shift+4</strong> Mac · <strong>Win+Shift+S</strong> PC).');
-  // Button trotzdem freischalten, damit Nutzer nicht feststeckt
-  const btn=document.getElementById('s1-weiter');
-  if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+  // Kein Enrichment möglich – Basiskarte bleibt wie sie ist (kein Fehler nötig)
 }
 
 // ── Profil-Karte in Schritt 1 anzeigen ────────────────
 function showProfileCard(){
   const preview=document.getElementById('profile-preview');
   if(!preview) return;
-  const name=A.autoName||A.name||'';
+  const name=A.autoName||A.name||(document.getElementById('i-name')||{}).value||'';
   const headline=A.autoHeadline||'';
   const photo=A.autoPhoto||'';
   const desc=A.autoDesc||'';
@@ -666,7 +663,7 @@ function showProfileCard(){
             :`<div style="width:76px;height:76px;border-radius:50%;border:3px solid #fff;background:#cce0f0;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">👤</div>`
           }
           <div style="padding-bottom:6px;min-width:0">
-            <div style="font-weight:700;font-size:18px;color:#191919;line-height:1.25">${name}</div>
+            <div data-name style="font-weight:700;font-size:18px;color:#191919;line-height:1.25">${name}</div>
             ${headline?`<div style="font-size:13px;color:#555;margin-top:3px;line-height:1.45">${headline}</div>`:''}
           </div>
         </div>
