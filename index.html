@@ -319,6 +319,9 @@ textarea{resize:vertical;min-height:90px}
       <div class="fetch-row" id="fetch-row" style="display:none;margin-top:8px"></div>
     </div>
 
+    <!-- Profil-Vorschau – erscheint sobald Profil geladen ist -->
+    <div id="profile-preview" style="display:none;margin-top:20px;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)"></div>
+
     <!-- Upload zone – fallback if auto-screenshot fails -->
     <div id="upload-section">
       <div class="fg" style="margin-top:6px">
@@ -337,7 +340,7 @@ textarea{resize:vertical;min-height:90px}
       </div>
     </div>
 
-    <button class="btn btn-primary" onclick="valS1()">Weiter →</button>
+    <button class="btn btn-primary" id="s1-weiter" onclick="valS1()" disabled style="opacity:.4;cursor:not-allowed">Weiter →</button>
     <button class="btn btn-back" onclick="go(0)">← Zurück</button>
   </div>
 
@@ -535,7 +538,13 @@ let fetchDebounce=null;
 function onUrlInput(val){
   clearTimeout(fetchDebounce);
   ssUrl=null; ssReady=false;
+  A.autoPhoto=''; A.autoHeadline=''; A.autoDesc=''; A.autoName='';
   setFetch('');
+  // Reset preview & disable button until profile loads
+  const preview=document.getElementById('profile-preview');
+  if(preview){preview.style.display='none';preview.innerHTML='';}
+  const btn=document.getElementById('s1-weiter');
+  if(btn){btn.disabled=true;btn.style.opacity='.4';btn.style.cursor='not-allowed';}
   if(val.length>20 && val.includes('linkedin')){
     fetchDebounce=setTimeout(()=>tryFetch(val.trim()),1000);
   }
@@ -545,13 +554,7 @@ let psPromise = null; // unused, kept for compat
 
 async function tryFetch(url){
   const clean=url.split('?')[0].replace(/\/$/,'');
-  setFetch('loading','Profildaten werden geladen…');
-
-  // Versuche mehrere CORS-Proxies nacheinander
-  const proxies=[
-    `https://api.allorigins.win/get?url=${encodeURIComponent(clean)}`,
-    `https://corsproxy.io/?url=${encodeURIComponent(clean)}`,
-  ];
+  setFetch('loading','Profil wird geladen…');
 
   function decEnt(s){
     return (s||'').replace(/&amp;/g,'&').replace(/&lt;/g,'<')
@@ -559,16 +562,55 @@ async function tryFetch(url){
       .replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');
   }
 
+  function parseTitle(title){
+    const t=decEnt(title||'');
+    const dash=t.indexOf(' - ');
+    if(dash>0){
+      A.autoName=t.substring(0,dash).trim();
+      const hl=t.substring(dash+3).replace(/\s*\|\s*LinkedIn$/i,'').trim();
+      if(hl.length>2) A.autoHeadline=hl;
+    }
+  }
+
+  // ── 1. Microlink Metadata API (sauber, kein CORS-Problem) ──
+  try{
+    const r=await Promise.race([
+      fetch(`https://api.microlink.io/?url=${encodeURIComponent(clean)}`),
+      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),12000))
+    ]);
+    const d=await r.json();
+    if(d.status==='success'&&d.data){
+      parseTitle(d.data.title||'');
+      if(d.data.description) A.autoDesc=decEnt(d.data.description);
+      const photo=d.data.image?.url||'';
+      if(photo&&photo.startsWith('http')){
+        A.autoPhoto=photo; ssUrl=photo; ssReady=true;
+        const thumb=document.getElementById('up-thumb');
+        if(thumb&&!thumb.src.startsWith('data:')){thumb.src=photo;thumb.style.display='block';}
+      }
+      if(A.autoHeadline||A.autoPhoto){
+        const inp=document.getElementById('slogan-input');
+        if(inp&&!inp.value&&A.autoHeadline) inp.value=A.autoHeadline;
+        setFetch('ok',`✓ Profil geladen`);
+        showProfileCard();
+        return;
+      }
+    }
+  }catch(e){}
+
+  // ── 2. CORS-Proxies als Fallback ──
+  const proxies=[
+    `https://api.allorigins.win/get?url=${encodeURIComponent(clean)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(clean)}`,
+  ];
   for(const proxyUrl of proxies){
-    try {
+    try{
       const r=await Promise.race([
         fetch(proxyUrl),
         new Promise((_,rej)=>setTimeout(()=>rej('timeout'),10000))
       ]);
       const json=await r.json();
-      // allorigins gibt .contents, corsproxy gibt direkten Text
-      const html=json.contents||json||'';
-      const htmlStr=typeof html==='string'?html:'';
+      const htmlStr=typeof(json.contents||json)==='string'?(json.contents||json):'';
       if(htmlStr.length<200) continue;
 
       const titleM=htmlStr.match(/property="og:title"\s+content="([^"]+)"/)
@@ -578,38 +620,64 @@ async function tryFetch(url){
       const descM =htmlStr.match(/property="og:description"\s+content="([^"]+)"/)
                   ||htmlStr.match(/content="([^"]+)"\s+property="og:description"/);
 
-      if(titleM){
-        const title=decEnt(titleM[1]);
-        const dash=title.indexOf(' - ');
-        if(dash>0){
-          const hl=title.substring(dash+3).replace(/\s*\|\s*LinkedIn$/i,'').trim();
-          if(hl&&hl.length>2){
-            A.autoHeadline=hl;
-            const inp=document.getElementById('slogan-input');
-            if(inp&&!inp.value) inp.value=hl;
-          }
-        }
-        A.autoName=decEnt(titleM[1]).split(' - ')[0].trim();
-      }
+      if(titleM) parseTitle(titleM[1]);
       if(descM) A.autoDesc=decEnt(descM[1]);
       if(imgM&&imgM[1]&&imgM[1].startsWith('http')){
-        A.autoPhoto=imgM[1];
-        ssUrl=imgM[1]; ssReady=true;
+        A.autoPhoto=imgM[1]; ssUrl=imgM[1]; ssReady=true;
         const thumb=document.getElementById('up-thumb');
         if(thumb&&!thumb.src.startsWith('data:')){thumb.src=imgM[1];thumb.style.display='block';}
       }
-
       if(A.autoHeadline||A.autoPhoto){
-        const hlShort=A.autoHeadline
-          ?` · Slogan: "<em>${A.autoHeadline.substring(0,48)}${A.autoHeadline.length>48?'…':''}</em>"`:'';
-        setFetch('ok',`✓ Profil geladen${hlShort}`);
-        return; // Erfolg
+        const inp=document.getElementById('slogan-input');
+        if(inp&&!inp.value&&A.autoHeadline) inp.value=A.autoHeadline;
+        setFetch('ok',`✓ Profil geladen`);
+        showProfileCard();
+        return;
       }
-    } catch(e){ continue; }
+    }catch(e){ continue; }
   }
 
-  // Alle Proxies gescheitert → manueller Upload
-  setFetch('warn','Bitte Screenshot hochladen (<strong>Cmd+Shift+4</strong> Mac · <strong>Win+Shift+S</strong> PC).');
+  // ── Alle Quellen gescheitert → manueller Upload erlauben ──
+  setFetch('warn','Profil konnte nicht automatisch geladen werden. Bitte Screenshot hochladen (<strong>Cmd+Shift+4</strong> Mac · <strong>Win+Shift+S</strong> PC).');
+  // Button trotzdem freischalten, damit Nutzer nicht feststeckt
+  const btn=document.getElementById('s1-weiter');
+  if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+}
+
+// ── Profil-Karte in Schritt 1 anzeigen ────────────────
+function showProfileCard(){
+  const preview=document.getElementById('profile-preview');
+  if(!preview) return;
+  const name=A.autoName||A.name||'';
+  const headline=A.autoHeadline||'';
+  const photo=A.autoPhoto||'';
+  const desc=A.autoDesc||'';
+  const url=(A.url||(document.getElementById('i-url')||{}).value||'').split('?')[0].replace(/\/$/,'');
+  preview.style.display='block';
+  preview.innerHTML=`
+    <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #dde1e7">
+      <div style="height:92px;background:linear-gradient(135deg,#1479BE 0%,#0d5fa0 100%);position:relative">
+        <span style="position:absolute;top:9px;right:12px;background:rgba(255,255,255,.22);border-radius:20px;padding:3px 11px;font-size:11px;color:#fff;font-weight:700;letter-spacing:.4px">LinkedIn Vorschau</span>
+      </div>
+      <div style="padding:0 20px 18px">
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-top:-40px;margin-bottom:12px">
+          ${photo
+            ?`<img src="${photo}" onerror="this.style.display='none'" style="width:76px;height:76px;border-radius:50%;border:3px solid #fff;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12)">`
+            :`<div style="width:76px;height:76px;border-radius:50%;border:3px solid #fff;background:#cce0f0;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">👤</div>`
+          }
+          <div style="padding-bottom:6px;min-width:0">
+            <div style="font-weight:700;font-size:18px;color:#191919;line-height:1.25">${name}</div>
+            ${headline?`<div style="font-size:13px;color:#555;margin-top:3px;line-height:1.45">${headline}</div>`:''}
+          </div>
+        </div>
+        ${desc?`<div style="font-size:13px;color:#444;line-height:1.65;padding-top:11px;border-top:1px solid #eaeaea">${desc.substring(0,200)}${desc.length>200?'…':''}</div>`:''}
+        <a href="${url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;margin-top:12px;font-size:12px;color:#0a66c2;text-decoration:none;font-weight:600">🔗 Profil auf LinkedIn öffnen</a>
+      </div>
+    </div>
+  `;
+  // Button freischalten
+  const btn=document.getElementById('s1-weiter');
+  if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
 }
 
 function setFetch(type,msg){
@@ -633,6 +701,9 @@ function handleUpload(inp){
     document.getElementById('up-done').style.display='block';
     document.getElementById('upzone').style.borderColor='var(--green)';
     setFetch('ok','✓ Screenshot hochgeladen und bereit');
+    // Screenshot hochgeladen → Button freischalten
+    const btn=document.getElementById('s1-weiter');
+    if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
   };
   rd.readAsDataURL(f);
 }
@@ -654,7 +725,6 @@ function valS1(){
   if(!n){alert('Bitte gib deinen Namen ein.');return;}
   if(!u||!u.includes('linkedin')){alert('Bitte gib einen gültigen LinkedIn-Link ein.');return;}
   A.name=n; A.url=u;
-  if(!ssReady && !ssUrl) tryFetch(u);
   go(2);
 }
 function valGoals(){
