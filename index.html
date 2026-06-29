@@ -316,15 +316,15 @@ textarea{resize:vertical;min-height:90px}
     <div class="fg">
       <label class="fl">Dein LinkedIn-Profillink *</label>
       <input type="url" id="i-url" placeholder="https://www.linkedin.com/in/dein-name" oninput="onUrlInput(this.value)">
-      <div class="fetch-row" id="fetch-row" style="display:none"></div>
+      <div class="fetch-row" id="fetch-row" style="display:none;margin-top:8px"></div>
     </div>
 
-    <!-- Upload zone (always shown – LinkedIn requires login for auto-fetch) -->
+    <!-- Upload zone – fallback if auto-screenshot fails -->
     <div id="upload-section">
       <div class="fg" style="margin-top:6px">
-        <label class="fl">Screenshot deines LinkedIn-Profils <span style="color:var(--gray);font-weight:500;text-transform:none;letter-spacing:0">(für die visuelle Analyse)</span></label>
+        <label class="fl">Screenshot deines LinkedIn-Profils <span style="color:var(--gray);font-weight:500;text-transform:none;letter-spacing:0">(wird automatisch geladen – oder manuell hochladen)</span></label>
         <div style="background:var(--blue-lt);border:1px solid var(--blue);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--blue);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px" id="fetch-hint">
-          💡 Öffne dein LinkedIn-Profil im Browser, mache einen Screenshot (<strong>Cmd+Shift+4</strong> auf Mac) und lade ihn hier hoch. So analysieren wir dein Profil direkt.
+          💡 Wir versuchen, dein Profil automatisch zu laden. Falls das nicht klappt: <strong>Cmd+Shift+4</strong> (Mac) oder <strong>Windows+Shift+S</strong> (PC) und Screenshot hier hochladen.
         </div>
         <div class="upzone" id="upzone" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
           <input type="file" accept="image/*" onchange="handleUpload(this)">
@@ -543,29 +543,56 @@ function onUrlInput(val){
 
 function tryFetch(url){
   const clean=url.split('?')[0].replace(/\/$/,'');
-  setFetch('loading','Profil wird abgerufen…');
+  setFetch('loading','LinkedIn-Profil wird geladen…');
 
-  // Try microlink screenshot API
-  const src1=`https://api.microlink.io/?url=${encodeURIComponent(clean)}&screenshot=true&meta=false&embed=screenshot.url`;
-  const img1=new Image();
-  img1.crossOrigin='anonymous';
-  img1.onload=()=>{ssUrl=src1;ssReady=true;setFetch('ok','✓ Profil erfolgreich abgerufen');};
-  img1.onerror=()=>{
-    // Fallback: thum.io
-    const src2=`https://image.thum.io/get/width/1200/crop/900/${encodeURIComponent(clean)}`;
-    const img2=new Image();
-    img2.onload=()=>{ssUrl=src2;ssReady=true;setFetch('ok','✓ Profil abgerufen');};
-    img2.onerror=()=>{
-      ssReady=false;
-      setFetch('warn','LinkedIn erfordert Login – bitte Screenshot oben hochladen.');
+  // Screenshot services in priority order (all support public LinkedIn profiles)
+  const services=[
+    // 1. Microlink – high quality, 50 free/day, renders full page
+    `https://api.microlink.io/?url=${encodeURIComponent(clean)}&screenshot=true&meta=false&embed=screenshot.url&viewport.width=1440&viewport.height=900&waitFor=2000`,
+    // 2. thum.io – reliable, no key needed
+    `https://image.thum.io/get/width/1440/crop/900/viewportWidth/1440/${encodeURIComponent(clean)}`,
+    // 3. WordPress mshots – completely free, no key
+    `https://s.wordpress.com/mshots/v1/${encodeURIComponent(clean)}?w=1440`,
+    // 4. s-shot.ru – public service
+    `https://mini.s-shot.ru/1440x900/PNG/1440/?${encodeURIComponent(clean)}`,
+  ];
+
+  let idx=0, done=false;
+
+  function tryNext(){
+    if(done) return;
+    if(idx>=services.length){
+      done=true; ssReady=false;
+      setFetch('warn','Auto-Screenshot nicht verfügbar – bitte Screenshot oben hochladen (Cmd+Shift+4 auf Mac).');
+      return;
+    }
+    const src=services[idx++];
+    const img=new Image();
+    const timer=setTimeout(tryNext, 10000); // 10s timeout per service
+    img.onload=()=>{
+      clearTimeout(timer);
+      if(done) return;
+      // Verify it's a real screenshot (not a tiny error placeholder)
+      if(img.naturalWidth>200){
+        done=true; ssUrl=src; ssReady=true;
+        setFetch('ok','✓ LinkedIn-Profil erfolgreich geladen');
+        // Show preview thumbnail
+        const thumb=document.getElementById('up-thumb');
+        if(thumb&&!thumb.src){thumb.src=src;thumb.style.display='block';}
+      } else {
+        tryNext();
+      }
     };
-    img2.src=src2;
-  };
-  img1.src=src1;
+    img.onerror=()=>{ clearTimeout(timer); tryNext(); };
+    img.src=src;
+  }
+
+  tryNext();
 }
 
 function setFetch(type,msg){
   const el=document.getElementById('fetch-row');
+  el.style.display=msg?'flex':'none';
   if(!msg){el.innerHTML='';return;}
   const col=type==='ok'?'var(--green)':type==='warn'?'var(--orange)':'var(--blue)';
   const icon=type==='loading'?'<div class="spin"></div>':type==='ok'?'<span style="font-size:16px">✅</span>':'<span style="font-size:16px">⚠️</span>';
@@ -605,7 +632,7 @@ function valS1(){
   if(!n){alert('Bitte gib deinen Namen ein.');return;}
   if(!u||!u.includes('linkedin')){alert('Bitte gib einen gültigen LinkedIn-Link ein.');return;}
   A.name=n; A.url=u;
-  if(!ssReady) tryFetch(u);
+  if(!ssReady && !ssUrl) tryFetch(u);
   go(2);
 }
 function valGoals(){
