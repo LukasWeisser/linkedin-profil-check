@@ -173,10 +173,8 @@ textarea{resize:vertical;min-height:90px}
 .screenshot-container{position:relative;display:block;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:var(--gray-lt)}
 .screenshot-container img{width:100%;display:block}
 
-/* LinkedIn Badge Styling – saubere Integration */
-.LI-profile-badge{max-width:100%!important;width:100%!important;box-shadow:none!important;border:none!important}
-.LI-profile-badge-container{border:none!important;box-shadow:none!important}
-#li-badge-wrap .badge-base{width:100%}
+/* LinkedIn Badge – KEINE Überschreibungen, Badge rendert in originalen Dimensionen */
+#li-badge-wrap{display:flex;justify-content:center;align-items:flex-start;min-height:250px}
 
 /* loading state inside container */
 .ss-loading{padding:48px;text-align:center;color:var(--gray)}
@@ -323,8 +321,22 @@ textarea{resize:vertical;min-height:90px}
       <input type="url" id="i-url" placeholder="https://www.linkedin.com/in/dein-name" oninput="onUrlInput(this.value)">
     </div>
 
-    <!-- LinkedIn Badge + Profil-Vorschau -->
+    <!-- LinkedIn Profil-Vorschau -->
     <div id="profile-preview" style="display:none;margin-top:20px"></div>
+
+    <!-- Slogan-Feld in Schritt 1 (wird auto-befüllt + beeinflusst Schritt 6) -->
+    <div id="s1-slogan-wrap" style="display:none;margin-top:16px;background:#f8faff;border:1.5px solid #c8daf5;border-radius:12px;padding:16px 18px">
+      <label style="display:block;font-size:11px;font-weight:700;color:#1479BE;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">
+        Dein Profilslogan <span style="font-weight:400;color:#888">(direkt unter deinem Namen)</span>
+      </label>
+      <input type="text" id="s1-slogan-input" placeholder="z. B. Ich helfe B2B-Firmen dabei, auf LinkedIn mehr Leads zu generieren"
+             oninput="syncSlogan(this.value)"
+             style="width:100%;box-sizing:border-box;border:1px solid #d0dff5;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none">
+      <p style="font-size:12px;color:#888;margin:8px 0 0">
+        💡 Kopiere diesen Text direkt aus deinem LinkedIn-Profil.
+        <a href="#" id="s1-li-link" target="_blank" rel="noopener" style="color:#0a66c2;text-decoration:none;font-weight:600">Profil öffnen ↗</a>
+      </p>
+    </div>
 
     <button class="btn btn-primary" id="s1-weiter" onclick="valS1()" disabled style="opacity:.4;cursor:not-allowed;margin-top:8px">Weiter →</button>
     <button class="btn btn-back" onclick="go(0)">← Zurück</button>
@@ -532,7 +544,13 @@ function onUrlInput(val){
   const btn=document.getElementById('s1-weiter');
   if(btn){btn.disabled=true;btn.style.opacity='.4';btn.style.cursor='not-allowed';}
   const preview=document.getElementById('profile-preview');
-  if(preview){preview.style.display='none';}
+  if(preview) preview.style.display='none';
+  const sw=document.getElementById('s1-slogan-wrap');
+  if(sw) sw.style.display='none';
+  // Bei neuer URL: Slogan-Felder zurücksetzen
+  A.autoHeadline='';
+  const f1=document.getElementById('s1-slogan-input');
+  if(f1) f1.value='';
   cardDebounce=setTimeout(checkAndShowCard, 700);
 }
 
@@ -557,14 +575,16 @@ function showLinkedInBadge(vanity){
   const preview=document.getElementById('profile-preview');
   if(!preview||!vanity) return;
 
+  // "Profil öffnen"-Link im Slogan-Feld aktualisieren
+  const liLink=document.getElementById('s1-li-link');
+  if(liLink) liLink.href=`https://www.linkedin.com/in/${vanity}`;
+
   preview.style.display='block';
-  // VERTICAL-Badge: zeigt Banner, Profilfoto, Name, Headline
   preview.innerHTML=`
     <div style="border-radius:14px;overflow:hidden;border:1px solid #dde1e7;background:#f3f2ef">
       <div style="font-size:11px;color:#888;font-weight:700;letter-spacing:.6px;text-transform:uppercase;text-align:center;padding:12px 0 4px">Dein LinkedIn-Profil</div>
-
-      <!-- VERTICAL Badge mit Banner -->
-      <div id="li-badge-wrap" style="display:flex;justify-content:center;padding:0 16px 16px">
+      <!-- VERTICAL Badge zeigt Banner + Foto + Name + Headline -->
+      <div id="li-badge-wrap">
         <div class="badge-base LI-profile-badge"
              data-locale="de_DE"
              data-size="large"
@@ -577,8 +597,7 @@ function showLinkedInBadge(vanity){
              target="_blank">${vanity}</a>
         </div>
       </div>
-
-      <div style="text-align:center;padding:0 16px 14px">
+      <div style="text-align:center;padding:8px 16px 14px">
         <a href="https://www.linkedin.com/in/${vanity}" target="_blank" rel="noopener"
            style="font-size:12px;color:#0a66c2;text-decoration:none;font-weight:600">
           🔗 Vollständiges Profil auf LinkedIn öffnen ↗
@@ -587,64 +606,122 @@ function showLinkedInBadge(vanity){
     </div>
   `;
 
+  // Slogan-Bereich anzeigen
+  const sw=document.getElementById('s1-slogan-wrap');
+  if(sw) sw.style.display='block';
+
+  // Badge-Script laden + DOM-Extraktion starten
   loadLinkedInBadgeScript();
-  // Headline aus Badge-DOM extrahieren + Slogan-Feld füllen
-  scheduleBadgeExtract();
 
   const btn=document.getElementById('s1-weiter');
   if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
 }
 
+// Synct Slogan-Feld in Step 1 mit Schritt-6-Feld
+function syncSlogan(val){
+  A.autoHeadline=val;
+  const inp6=document.getElementById('slogan-input');
+  if(inp6) inp6.value=val;
+}
+
 function loadLinkedInBadgeScript(){
   if(document.getElementById('li-badge-js')){
     try{ if(window.LIRenderAll) window.LIRenderAll(); }catch(e){}
-    scheduleBadgeExtract();
+    startBadgeObserver();
     return;
   }
   const s=document.createElement('script');
   s.id='li-badge-js';
   s.src='https://platform.linkedin.com/badges/js/profile.js';
   s.async=true;
-  s.defer=true;
-  s.onload=()=>scheduleBadgeExtract();
   document.body.appendChild(s);
+  // Observer direkt starten (Script-Laden und Badge-Render laufen asynchron)
+  startBadgeObserver();
 }
 
-// ── Headline + Foto aus Badge-DOM auslesen ────────────
-function scheduleBadgeExtract(){
-  // Mehrfach versuchen – Badge rendert asynchron
-  [1000,2500,4500].forEach(ms=>setTimeout(extractBadgeData, ms));
+// ── MutationObserver: wartet bis Badge-HTML im DOM erscheint ──
+let _badgeObs=null;
+function startBadgeObserver(){
+  if(_badgeObs){ _badgeObs.disconnect(); _badgeObs=null; }
+
+  const wrap=document.getElementById('li-badge-wrap');
+  if(!wrap) return;
+
+  _badgeObs=new MutationObserver(()=>{
+    // Badge-Content wurde injiziert – Extraktion versuchen
+    const ok=tryExtractSlogan();
+    if(ok){ _badgeObs.disconnect(); _badgeObs=null; }
+  });
+  _badgeObs.observe(wrap,{childList:true,subtree:true,characterData:true});
+
+  // Fallback-Timer falls Observer Badge verpasst
+  [2000,4000,7000].forEach(ms=>setTimeout(()=>{
+    if(tryExtractSlogan()&&_badgeObs){_badgeObs.disconnect();_badgeObs=null;}
+  },ms));
 }
 
-function extractBadgeData(){
-  // Versuche Headline (Slogan) aus dem gerenderten Badge-DOM zu lesen
-  const badge=document.querySelector('.LI-profile-badge');
-  if(!badge) return;
+function tryExtractSlogan(){
+  const wrap=document.getElementById('li-badge-wrap');
+  if(!wrap) return false;
+  const html=wrap.innerHTML;
+  if(html.length<50) return false; // Badge noch nicht gerendert
 
-  // LinkedIn Badge-Klassen (können variieren je nach Badge-Version)
-  const titleEl = badge.querySelector(
-    '.LI-title, .LI-badge-member-info-headline, [class*="LI-title"], [class*="headline"]'
-  );
-  if(titleEl){
-    const headline=titleEl.textContent.trim();
-    if(headline && headline.length>2){
-      A.autoHeadline=headline;
-      // Slogan-Feld in Schritt 6 automatisch füllen
-      const sloganInp=document.getElementById('slogan-input');
-      if(sloganInp && !sloganInp.value) sloganInp.value=headline;
-    }
+  // Alle Text-Nodes im Badge durchsuchen
+  const allEls=wrap.querySelectorAll('*');
+  let headline='', name='', photo='';
+
+  // LinkedIn Badge nutzt verschiedene Klassen je nach Version
+  // Probiere breite Auswahl an Selektoren
+  const titleCandidates=[
+    '[class*="title"]','[class*="headline"]','[class*="tagline"]',
+    '[class*="position"]','[class*="specialization"]'
+  ];
+  const nameCandidates=['[class*="name"]','[class*="entity-name"]','h3','h4'];
+
+  for(const sel of titleCandidates){
+    try{
+      const el=wrap.querySelector(sel);
+      if(el&&el.textContent.trim().length>3&&!el.textContent.includes('LinkedIn')){
+        headline=el.textContent.trim(); break;
+      }
+    }catch(e){}
   }
 
-  // Profilfoto-URL aus Badge auslesen (für Analyse-Karte)
-  const imgEl=badge.querySelector('img[src*="licdn"], img[src*="linkedin"]');
-  if(imgEl && imgEl.src && !A.autoPhoto){
-    A.autoPhoto=imgEl.src;
-    ssUrl=imgEl.src; ssReady=true;
+  // Falls Klassen-Suche fehlschlägt: heuristisch – 2. Textelement nach dem Namen
+  if(!headline){
+    const texts=[];
+    allEls.forEach(el=>{
+      if(el.children.length===0&&el.textContent.trim().length>4&&!el.textContent.includes('LinkedIn')&&!el.textContent.includes('Profil')){
+        texts.push(el.textContent.trim());
+      }
+    });
+    if(texts.length>=2) headline=texts[1]; // [0]=Name, [1]=Slogan
   }
 
-  // Name aus Badge auslesen
-  const nameEl=badge.querySelector('.LI-name, [class*="LI-name"]');
-  if(nameEl && nameEl.textContent.trim()) A.autoName=nameEl.textContent.trim();
+  for(const sel of nameCandidates){
+    try{
+      const el=wrap.querySelector(sel);
+      if(el&&el.textContent.trim().length>1){name=el.textContent.trim();break;}
+    }catch(e){}
+  }
+
+  // Profilfoto
+  const img=wrap.querySelector('img');
+  if(img&&img.src&&img.src.startsWith('http')) photo=img.src;
+
+  // Ergebnisse speichern + UI updaten
+  if(headline){
+    A.autoHeadline=headline;
+    // Slogan-Felder befüllen (Step 1 + Step 6)
+    const f1=document.getElementById('s1-slogan-input');
+    const f6=document.getElementById('slogan-input');
+    if(f1&&!f1.value) f1.value=headline;
+    if(f6&&!f6.value) f6.value=headline;
+  }
+  if(name) A.autoName=name;
+  if(photo&&!A.autoPhoto){ A.autoPhoto=photo; ssUrl=photo; ssReady=true; }
+
+  return headline.length>0; // true = Extraktion erfolgreich
 }
 
 // ── Analyse-Seite: Profil-Badge (Vollansicht mit Banner) ─
@@ -691,6 +768,13 @@ function valS1(){
   if(!n){alert('Bitte gib deinen Namen ein.');return;}
   if(!u||!u.includes('linkedin')){alert('Bitte gib einen gültigen LinkedIn-Link ein.');return;}
   A.name=n; A.url=u;
+  // Slogan aus Step-1-Feld nach Step-6-Feld übertragen
+  const s1Slogan=(document.getElementById('s1-slogan-input')||{value:''}).value.trim();
+  if(s1Slogan){
+    A.autoHeadline=s1Slogan;
+    const f6=document.getElementById('slogan-input');
+    if(f6&&!f6.value) f6.value=s1Slogan;
+  }
   go(2);
 }
 function valGoals(){
