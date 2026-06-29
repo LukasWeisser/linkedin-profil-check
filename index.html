@@ -173,8 +173,10 @@ textarea{resize:vertical;min-height:90px}
 .screenshot-container{position:relative;display:block;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:var(--gray-lt)}
 .screenshot-container img{width:100%;display:block}
 
-/* LinkedIn Badge – KEINE Überschreibungen, Badge rendert in originalen Dimensionen */
-#li-badge-wrap{display:flex;justify-content:center;align-items:flex-start;min-height:250px}
+/* LinkedIn Badge – versteckt im Hintergrund, Daten werden extrahiert */
+#li-badge-hidden{position:absolute;visibility:hidden;pointer-events:none;top:-9999px;left:-9999px}
+#li-badge-wrap{display:block;min-height:200px}
+@keyframes li-pulse{0%,100%{opacity:1}50%{opacity:.5}}
 
 /* loading state inside container */
 .ss-loading{padding:48px;text-align:center;color:var(--gray)}
@@ -311,34 +313,101 @@ textarea{resize:vertical;min-height:90px}
   <div class="step-card active" id="s1">
     <div class="step-num"><div class="step-dot">1</div>Schritt 1 von 6</div>
     <h2>Dein LinkedIn-Profil</h2>
-    <p class="step-desc">Gib deinen Profillink ein – dein LinkedIn-Profil wird direkt hier geladen.</p>
+    <p class="step-desc">Füge deinen Link ein und lade einen Screenshot deines vollständigen Profils hoch – inkl. Banner.</p>
+
     <div class="fg">
       <label class="fl">Dein Name *</label>
       <input type="text" id="i-name" placeholder="z. B. Anna Müller" autocomplete="name" oninput="onNameInput(this.value)">
     </div>
-    <div class="fg">
+    <div class="fg" style="margin-bottom:0">
       <label class="fl">Dein LinkedIn-Profillink *</label>
       <input type="url" id="i-url" placeholder="https://www.linkedin.com/in/dein-name" oninput="onUrlInput(this.value)">
     </div>
 
-    <!-- LinkedIn Profil-Vorschau -->
-    <div id="profile-preview" style="display:none;margin-top:20px"></div>
+    <!-- LinkedIn Profil-Karte (erscheint nach URL-Eingabe) -->
+    <div id="profile-preview" style="display:none;margin-top:16px;position:relative"></div>
+    <!-- Versteckter Badge-Container – lädt Profildaten von LinkedIn, wird dann als echte Karte angezeigt -->
+    <div id="li-badge-hidden" style="height:0;overflow:hidden;visibility:hidden;position:absolute"></div>
 
-    <!-- Slogan-Feld in Schritt 1 (wird auto-befüllt + beeinflusst Schritt 6) -->
-    <div id="s1-slogan-wrap" style="display:none;margin-top:16px;background:#f8faff;border:1.5px solid #c8daf5;border-radius:12px;padding:16px 18px">
+    <!-- ── Screenshot Upload ── -->
+    <div style="margin-top:20px;border:2px dashed #c8d8ea;border-radius:14px;overflow:hidden;background:#fafcff" id="ss-upload-section">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1479BE,#0a5ea0);padding:14px 18px;color:#fff">
+        <div style="font-weight:700;font-size:15px;margin-bottom:2px">📸 Screenshot deines LinkedIn-Profils hochladen</div>
+        <div style="font-size:12px;opacity:.85">So können wir Banner, Foto und alle Profilelemente vollständig analysieren</div>
+      </div>
+
+      <!-- Anleitung Mac + Windows -->
+      <div style="display:flex;gap:10px;padding:14px 16px 0">
+        <div style="flex:1;background:#fff;border:1px solid #e0eaf5;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:#888;letter-spacing:.4px;margin-bottom:8px">🍎 MAC</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:6px">
+            <kbd style="background:#f1f3f5;border:1px solid #d0d5dd;border-radius:5px;padding:3px 7px;font-size:12px;font-family:monospace">⌘ Cmd</kbd>
+            <span style="color:#888;font-size:11px">+</span>
+            <kbd style="background:#f1f3f5;border:1px solid #d0d5dd;border-radius:5px;padding:3px 7px;font-size:12px;font-family:monospace">⇧</kbd>
+            <span style="color:#888;font-size:11px">+</span>
+            <kbd style="background:#f1f3f5;border:1px solid #d0d5dd;border-radius:5px;padding:3px 7px;font-size:12px;font-family:monospace">4</kbd>
+          </div>
+          <div style="font-size:11px;color:#666">Bereich auswählen → Datei landet auf dem Desktop</div>
+        </div>
+        <div style="flex:1;background:#fff;border:1px solid #e0eaf5;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:#888;letter-spacing:.4px;margin-bottom:8px">🪟 WINDOWS</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:6px">
+            <kbd style="background:#f1f3f5;border:1px solid #d0d5dd;border-radius:5px;padding:3px 7px;font-size:12px;font-family:monospace">⊞</kbd>
+            <span style="color:#888;font-size:11px">+</span>
+            <kbd style="background:#f1f3f5;border:1px solid #d0d5dd;border-radius:5px;padding:3px 7px;font-size:12px;font-family:monospace">⇧</kbd>
+            <span style="color:#888;font-size:11px">+</span>
+            <kbd style="background:#f1f3f5;border:1px solid #d0d5dd;border-radius:5px;padding:3px 7px;font-size:12px;font-family:monospace">S</kbd>
+          </div>
+          <div style="font-size:11px;color:#666">Ausschnitt wählen → In Ablage kopiert</div>
+        </div>
+      </div>
+
+      <!-- Drop Zone -->
+      <div style="padding:14px 16px 16px">
+        <div id="ss-dropzone"
+             ondragover="event.preventDefault();this.classList.add('ss-drag')"
+             ondragleave="this.classList.remove('ss-drag')"
+             ondrop="handleScreenshotDrop(event)"
+             onclick="document.getElementById('ss-file-input').click()"
+             style="border:2px dashed #90b8d9;border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#fff;transition:.2s">
+          <input type="file" id="ss-file-input" accept="image/*" style="display:none" onchange="handleScreenshot(this)">
+          <div style="font-size:28px;margin-bottom:8px">🖼️</div>
+          <div style="font-weight:600;color:#1479BE;font-size:14px;margin-bottom:4px">Screenshot hier ablegen oder klicken</div>
+          <div style="font-size:12px;color:#888">Dein LinkedIn-Profil inkl. Banner · PNG oder JPG</div>
+        </div>
+
+        <!-- Vorschau nach Upload -->
+        <div id="ss-done" style="display:none;margin-top:12px">
+          <div style="background:#edfdf5;border:1.5px solid #6bcf9f;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">✅</span>
+            <div>
+              <div style="font-weight:700;font-size:13px;color:#1a6640">Screenshot hochgeladen!</div>
+              <div style="font-size:12px;color:#4a8a63">Dein Profil wird in der Analyse vollständig angezeigt.</div>
+            </div>
+            <button onclick="clearScreenshot()" style="margin-left:auto;background:none;border:none;color:#888;cursor:pointer;font-size:18px" title="Entfernen">✕</button>
+          </div>
+          <img id="ss-thumb" style="width:100%;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0;display:none">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slogan-Feld (erscheint nach URL-Eingabe, auto-befüllt wenn möglich) -->
+    <div id="s1-slogan-wrap" style="display:none;margin-top:14px;background:#f8faff;border:1.5px solid #c8daf5;border-radius:12px;padding:16px 18px">
       <label style="display:block;font-size:11px;font-weight:700;color:#1479BE;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">
-        Dein Profilslogan <span style="font-weight:400;color:#888">(direkt unter deinem Namen)</span>
+        Dein Profilslogan <span style="font-weight:400;color:#888">(direkt unter deinem Namen – wird automatisch übernommen)</span>
       </label>
-      <input type="text" id="s1-slogan-input" placeholder="z. B. Ich helfe B2B-Firmen dabei, auf LinkedIn mehr Leads zu generieren"
+      <input type="text" id="s1-slogan-input" placeholder="z. B. Ich helfe B2B-Firmen dabei, mehr Kunden über LinkedIn zu gewinnen"
              oninput="syncSlogan(this.value)"
              style="width:100%;box-sizing:border-box;border:1px solid #d0dff5;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none">
       <p style="font-size:12px;color:#888;margin:8px 0 0">
-        💡 Kopiere diesen Text direkt aus deinem LinkedIn-Profil.
+        Direkt aus LinkedIn kopieren:
         <a href="#" id="s1-li-link" target="_blank" rel="noopener" style="color:#0a66c2;text-decoration:none;font-weight:600">Profil öffnen ↗</a>
       </p>
     </div>
 
-    <button class="btn btn-primary" id="s1-weiter" onclick="valS1()" disabled style="opacity:.4;cursor:not-allowed;margin-top:8px">Weiter →</button>
+    <button class="btn btn-primary" id="s1-weiter" onclick="valS1()" disabled style="opacity:.4;cursor:not-allowed;margin-top:16px">Weiter →</button>
     <button class="btn btn-back" onclick="go(0)">← Zurück</button>
   </div>
 
@@ -482,7 +551,7 @@ textarea{resize:vertical;min-height:90px}
 </div><!-- /content -->
 
 <script>
-const A = { goals:[], ch:[], dkPos:false, cardPhoto:'', autoPhoto:'', autoHeadline:'', autoDesc:'', autoName:'' };
+const A = { goals:[], ch:[], dkPos:false, cardPhoto:'', autoPhoto:'', autoHeadline:'', autoDesc:'', autoName:'', autoBanner:'' };
 let ssUrl = null;
 let ssReady = false;
 
@@ -575,15 +644,32 @@ function showLinkedInBadge(vanity){
   const preview=document.getElementById('profile-preview');
   if(!preview||!vanity) return;
 
-  // "Profil öffnen"-Link im Slogan-Feld aktualisieren
   const liLink=document.getElementById('s1-li-link');
   if(liLink) liLink.href=`https://www.linkedin.com/in/${vanity}`;
 
+  // Skeleton-Karte während Badge lädt
   preview.style.display='block';
   preview.innerHTML=`
-    <div style="border-radius:14px;overflow:hidden;border:1px solid #dde1e7;background:#f3f2ef">
-      <div style="font-size:11px;color:#888;font-weight:700;letter-spacing:.6px;text-transform:uppercase;text-align:center;padding:12px 0 4px">Dein LinkedIn-Profil</div>
-      <!-- VERTICAL Badge zeigt Banner + Foto + Name + Headline -->
+    <div id="li-loading-card" style="border-radius:14px;overflow:hidden;border:1.5px solid #dde1e7;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.07)">
+      <div style="height:120px;background:linear-gradient(135deg,#e8f0fe,#d2e3fc);animation:li-pulse 1.5s ease-in-out infinite"></div>
+      <div style="padding:0 20px 20px">
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-top:-44px;margin-bottom:14px">
+          <div style="width:88px;height:88px;border-radius:50%;border:3px solid #fff;background:#d2e3fc;flex-shrink:0;animation:li-pulse 1.5s ease-in-out infinite"></div>
+          <div style="padding-bottom:8px;flex:1">
+            <div style="height:16px;background:#e0e0e0;border-radius:6px;width:55%;margin-bottom:8px;animation:li-pulse 1.5s ease-in-out infinite"></div>
+            <div style="height:12px;background:#e8e8e8;border-radius:6px;width:80%;animation:li-pulse 1.5s ease-in-out infinite"></div>
+          </div>
+        </div>
+        <div style="text-align:center;color:#aaa;font-size:12px">⏳ Profil wird von LinkedIn geladen…</div>
+      </div>
+    </div>
+    <div id="li-profile-card" style="display:none"></div>
+  `;
+
+  // Badge unsichtbar im Hintergrund rendern – Daten werden daraus extrahiert
+  const hidden=document.getElementById('li-badge-hidden');
+  if(hidden){
+    hidden.innerHTML=`
       <div id="li-badge-wrap">
         <div class="badge-base LI-profile-badge"
              data-locale="de_DE"
@@ -597,7 +683,43 @@ function showLinkedInBadge(vanity){
              target="_blank">${vanity}</a>
         </div>
       </div>
-      <div style="text-align:center;padding:8px 16px 14px">
+    `;
+  }
+
+  const sw=document.getElementById('s1-slogan-wrap');
+  if(sw) sw.style.display='block';
+
+  loadLinkedInBadgeScript();
+
+  // Weiter-Button sofort freischalten
+  const btn=document.getElementById('s1-weiter');
+  if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+}
+
+// ── Echte Profilkarte aus extrahierten Badge-Daten ──
+function buildProfileCard(name, headline, photo, banner, vanity){
+  const card=document.getElementById('li-profile-card');
+  const loading=document.getElementById('li-loading-card');
+  if(!card) return;
+  card.style.display='block';
+  if(loading) loading.style.display='none';
+  const bannerStyle=banner
+    ?`background-image:url('${banner}');background-size:cover;background-position:center top`
+    :'background:linear-gradient(135deg,#1479BE,#0a5ea0)';
+  card.innerHTML=`
+    <div style="border-radius:14px;overflow:hidden;border:1.5px solid #dde1e7;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.07)">
+      <div style="height:${banner?'140':'90'}px;${bannerStyle}"></div>
+      <div style="padding:0 20px 20px">
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-top:-44px;margin-bottom:14px">
+          ${photo
+            ?`<img src="${photo}" style="width:88px;height:88px;border-radius:50%;border:3px solid #fff;object-fit:cover;box-shadow:0 2px 8px rgba(0,0,0,.15);flex-shrink:0" onerror="this.parentNode.innerHTML='<div style=\'width:88px;height:88px;border-radius:50%;border:3px solid #fff;background:#d2e3fc;display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0\'>👤</div>'">`
+            :`<div style="width:88px;height:88px;border-radius:50%;border:3px solid #fff;background:#d2e3fc;display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0">👤</div>`
+          }
+          <div style="padding-bottom:6px;min-width:0">
+            <div style="font-weight:700;font-size:18px;color:#191919;line-height:1.2">${name||vanity}</div>
+            ${headline?`<div style="font-size:13px;color:#555;margin-top:4px;line-height:1.4">${headline}</div>`:''}
+          </div>
+        </div>
         <a href="https://www.linkedin.com/in/${vanity}" target="_blank" rel="noopener"
            style="font-size:12px;color:#0a66c2;text-decoration:none;font-weight:600">
           🔗 Vollständiges Profil auf LinkedIn öffnen ↗
@@ -605,16 +727,6 @@ function showLinkedInBadge(vanity){
       </div>
     </div>
   `;
-
-  // Slogan-Bereich anzeigen
-  const sw=document.getElementById('s1-slogan-wrap');
-  if(sw) sw.style.display='block';
-
-  // Badge-Script laden + DOM-Extraktion starten
-  loadLinkedInBadgeScript();
-
-  const btn=document.getElementById('s1-weiter');
-  if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
 }
 
 // Synct Slogan-Feld in Step 1 mit Schritt-6-Feld
@@ -658,6 +770,15 @@ function startBadgeObserver(){
   [2000,4000,7000].forEach(ms=>setTimeout(()=>{
     if(tryExtractSlogan()&&_badgeObs){_badgeObs.disconnect();_badgeObs=null;}
   },ms));
+  // Letzter Fallback: Badge-Script nicht geladen oder LinkedIn blockiert
+  // → Zeige Basis-Karte mit Nutzer-Input nach 9s
+  setTimeout(()=>{
+    const card=document.getElementById('li-profile-card');
+    if(card&&card.style.display==='none'){
+      const nm=(document.getElementById('i-name')||{value:''}).value.trim();
+      buildProfileCard(nm,'','',(A.autoBanner||''),A.liVanity||'');
+    }
+  },9000);
 }
 
 function tryExtractSlogan(){
@@ -666,18 +787,23 @@ function tryExtractSlogan(){
   const html=wrap.innerHTML;
   if(html.length<50) return false; // Badge noch nicht gerendert
 
-  // Alle Text-Nodes im Badge durchsuchen
-  const allEls=wrap.querySelectorAll('*');
-  let headline='', name='', photo='';
+  const allEls=[...wrap.querySelectorAll('*')];
+  let headline='', name='', photo='', banner='';
 
-  // LinkedIn Badge nutzt verschiedene Klassen je nach Version
-  // Probiere breite Auswahl an Selektoren
+  // ── Name ─────────────────────────────────────────────
+  const nameCandidates=['[class*="name"]','[class*="entity-name"]','h3','h4'];
+  for(const sel of nameCandidates){
+    try{
+      const el=wrap.querySelector(sel);
+      if(el&&el.textContent.trim().length>1){name=el.textContent.trim();break;}
+    }catch(e){}
+  }
+
+  // ── Headline/Slogan ──────────────────────────────────
   const titleCandidates=[
     '[class*="title"]','[class*="headline"]','[class*="tagline"]',
-    '[class*="position"]','[class*="specialization"]'
+    '[class*="position"]','[class*="specialization"]','[class*="subtitle"]'
   ];
-  const nameCandidates=['[class*="name"]','[class*="entity-name"]','h3','h4'];
-
   for(const sel of titleCandidates){
     try{
       const el=wrap.querySelector(sel);
@@ -686,33 +812,68 @@ function tryExtractSlogan(){
       }
     }catch(e){}
   }
-
-  // Falls Klassen-Suche fehlschlägt: heuristisch – 2. Textelement nach dem Namen
   if(!headline){
     const texts=[];
     allEls.forEach(el=>{
-      if(el.children.length===0&&el.textContent.trim().length>4&&!el.textContent.includes('LinkedIn')&&!el.textContent.includes('Profil')){
+      if(el.children.length===0&&el.textContent.trim().length>4
+         &&!el.textContent.includes('LinkedIn')&&!el.textContent.includes('Profil')
+         &&!el.textContent.includes('View profile')){
         texts.push(el.textContent.trim());
       }
     });
-    if(texts.length>=2) headline=texts[1]; // [0]=Name, [1]=Slogan
+    if(texts.length>=2) headline=texts[1];
   }
 
-  for(const sel of nameCandidates){
-    try{
-      const el=wrap.querySelector(sel);
-      if(el&&el.textContent.trim().length>1){name=el.textContent.trim();break;}
-    }catch(e){}
+  // ── Profilfoto ───────────────────────────────────────
+  // LinkedIn Foto-URLs enthalten "profile-displayphoto"
+  const imgs=wrap.querySelectorAll('img');
+  imgs.forEach(img=>{
+    if(!photo&&img.src&&img.src.startsWith('http')&&img.src.includes('licdn')){
+      photo=img.src;
+    }
+  });
+  // Fallback: erstes img-src
+  if(!photo){
+    const img=wrap.querySelector('img');
+    if(img&&img.src&&img.src.startsWith('http')) photo=img.src;
   }
 
-  // Profilfoto
-  const img=wrap.querySelector('img');
-  if(img&&img.src&&img.src.startsWith('http')) photo=img.src;
+  // ── Banner-URL aus CSS background-image ─────────────
+  // Banner-URLs von LinkedIn enthalten "background" oder liegen auf media.licdn.com
+  // und sind KEINE Profilfotos (die enthalten "displayphoto")
+  allEls.forEach(el=>{
+    if(banner) return;
+    // Versuche Inline-Style
+    let bg=el.style.backgroundImage||'';
+    // Dann Computed Style (funktioniert auch für extern geladene Stylesheets)
+    if(!bg||bg==='none'){
+      try{ bg=getComputedStyle(el).backgroundImage||''; }catch(e){}
+    }
+    if(bg&&bg!=='none'&&(bg.includes('licdn')||bg.includes('linkedin'))){
+      const m=bg.match(/url\(["']?([^"')]+)["']?\)/);
+      if(m&&m[1]){
+        const u=m[1];
+        // Profilfotos ausschließen – Banner-URL enthält kein "displayphoto"
+        if(!u.includes('displayphoto')&&!u.includes('profile-photo')){
+          banner=u;
+        }
+      }
+    }
+  });
+  // Fallback: nach data-Attributen suchen
+  if(!banner){
+    allEls.forEach(el=>{
+      if(banner) return;
+      ['data-background','data-bg','data-src','data-lazy-src'].forEach(attr=>{
+        const v=el.getAttribute(attr)||'';
+        if(v&&v.includes('licdn')&&!v.includes('displayphoto')) banner=v;
+      });
+    });
+  }
 
-  // Ergebnisse speichern + UI updaten
+  // ── Ergebnisse speichern ─────────────────────────────
   if(headline){
     A.autoHeadline=headline;
-    // Slogan-Felder befüllen (Step 1 + Step 6)
     const f1=document.getElementById('s1-slogan-input');
     const f6=document.getElementById('slogan-input');
     if(f1&&!f1.value) f1.value=headline;
@@ -720,8 +881,21 @@ function tryExtractSlogan(){
   }
   if(name) A.autoName=name;
   if(photo&&!A.autoPhoto){ A.autoPhoto=photo; ssUrl=photo; ssReady=true; }
+  if(banner&&!A.autoBanner) A.autoBanner=banner;
 
-  return headline.length>0; // true = Extraktion erfolgreich
+  // ── Echte Profilkarte aufbauen ───────────────────────
+  // Nur wenn wir mindestens Name, Headline oder Foto haben
+  if(name||headline||photo||banner){
+    buildProfileCard(
+      name||(document.getElementById('i-name')||{value:''}).value.trim(),
+      headline,
+      photo,
+      banner,
+      A.liVanity||''
+    );
+  }
+
+  return headline.length>0;
 }
 
 // ── Analyse-Seite: Profil-Badge (Vollansicht mit Banner) ─
@@ -969,8 +1143,8 @@ function buildResult(){
         <!-- Profil-Karte -->
         <div style="max-width:680px;margin:16px auto;background:white;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.12)">
 
-          <!-- Banner -->
-          <div style="height:130px;background:linear-gradient(135deg,#1479BE 0%,#0d5fa0 60%,#0a4f87 100%);position:relative">
+          <!-- Banner – echtes LinkedIn-Banner wenn verfügbar, sonst Gradient -->
+          <div style="height:130px;${A.autoBanner?`background-image:url('${A.autoBanner}');background-size:cover;background-position:center top`:'background:linear-gradient(135deg,#1479BE 0%,#0d5fa0 60%,#0a4f87 100%)'};position:relative">
             <div class="a-badge ${anns[0].cls}" style="position:absolute;top:50%;right:60px;transform:translateY(-50%);z-index:10">
               <div class="a-badge-inner">1</div><div class="badge-label">${anns[0].title}</div>
             </div>
