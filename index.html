@@ -541,53 +541,101 @@ function onUrlInput(val){
   }
 }
 
-function tryFetch(url){
+async function tryFetch(url){
   const clean=url.split('?')[0].replace(/\/$/,'');
   setFetch('loading','LinkedIn-Profil wird geladen…');
 
-  // Screenshot services in priority order (all support public LinkedIn profiles)
-  const services=[
-    // 1. Microlink – high quality, 50 free/day, renders full page
-    `https://api.microlink.io/?url=${encodeURIComponent(clean)}&screenshot=true&meta=false&embed=screenshot.url&viewport.width=1440&viewport.height=900&waitFor=2000`,
-    // 2. thum.io – reliable, no key needed
-    `https://image.thum.io/get/width/1440/crop/900/viewportWidth/1440/${encodeURIComponent(clean)}`,
-    // 3. WordPress mshots – completely free, no key
-    `https://s.wordpress.com/mshots/v1/${encodeURIComponent(clean)}?w=1440`,
-    // 4. s-shot.ru – public service
-    `https://mini.s-shot.ru/1440x900/PNG/1440/?${encodeURIComponent(clean)}`,
-  ];
+  // ── Schritt 1: Profildaten via CORS-Proxy abrufen ─────────────────────────
+  try {
+    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(clean)}`;
+    const r=await Promise.race([
+      fetch(proxy),
+      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),12000))
+    ]);
+    const json=await r.json();
+    const html=json.contents||'';
 
-  let idx=0, done=false;
+    if(html.length>500){
+      function decEnt(s){
+        return (s||'').replace(/&amp;/g,'&').replace(/&lt;/g,'<')
+          .replace(/&gt;/g,'>').replace(/&quot;/g,'"')
+          .replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');
+      }
+      // og:title → "Name - Headline | LinkedIn"
+      const titleM=html.match(/property="og:title"\s+content="([^"]+)"/)
+                  ||html.match(/content="([^"]+)"\s+property="og:title"/);
+      // og:image → Profilfoto
+      const imgM  =html.match(/property="og:image"\s+content="([^"]+)"/)
+                  ||html.match(/content="([^"]+)"\s+property="og:image"/);
+      // og:description
+      const descM =html.match(/property="og:description"\s+content="([^"]+)"/)
+                  ||html.match(/content="([^"]+)"\s+property="og:description"/);
 
-  function tryNext(){
-    if(done) return;
-    if(idx>=services.length){
-      done=true; ssReady=false;
-      setFetch('warn','Auto-Screenshot nicht verfügbar – bitte Screenshot oben hochladen (Cmd+Shift+4 auf Mac).');
+      // Headline extrahieren
+      if(titleM){
+        const title=decEnt(titleM[1]);
+        const dash=title.indexOf(' - ');
+        if(dash>0){
+          const hl=title.substring(dash+3).replace(/\s*\|\s*LinkedIn$/i,'').trim();
+          if(hl&&hl.length>2){
+            A.autoHeadline=hl;
+            const inp=document.getElementById('slogan-input');
+            if(inp&&!inp.value) inp.value=hl;
+          }
+        }
+        A.autoName=decEnt(titleM[1]).split(' - ')[0].trim();
+      }
+      if(descM) A.autoDesc=decEnt(descM[1]);
+
+      // Profilfoto zeigen
+      if(imgM&&imgM[1]&&imgM[1].startsWith('http')){
+        A.autoPhoto=imgM[1];
+        if(!ssReady) ssUrl=imgM[1];
+        const thumb=document.getElementById('up-thumb');
+        if(thumb&&!thumb.src.startsWith('data:')){thumb.src=imgM[1];thumb.style.display='block';}
+      }
+
+      const hlShort=A.autoHeadline
+        ?` · Slogan: "<em>${A.autoHeadline.substring(0,50)}${A.autoHeadline.length>50?'…':''}</em>"`:'';
+      setFetch('ok',`✓ Profildaten geladen${hlShort}`);
+
+      // Screenshot parallel versuchen (non-blocking)
+      tryScreenshot(clean);
       return;
     }
+  } catch(e){}
+
+  // ── Schritt 2: Direkt Screenshot-Fallback ─────────────────────────────────
+  tryScreenshot(clean);
+}
+
+function tryScreenshot(clean){
+  if(ssReady) return;
+  const services=[
+    `https://api.microlink.io/?url=${encodeURIComponent(clean)}&screenshot=true&meta=false&embed=screenshot.url&viewport.width=1440`,
+    `https://image.thum.io/get/width/1440/crop/900/${encodeURIComponent(clean)}`,
+    `https://s.wordpress.com/mshots/v1/${encodeURIComponent(clean)}?w=1440`,
+  ];
+  let idx=0,done=false;
+  function next(){
+    if(done||ssReady||idx>=services.length) return;
     const src=services[idx++];
     const img=new Image();
-    const timer=setTimeout(tryNext, 10000); // 10s timeout per service
+    const t=setTimeout(next,9000);
     img.onload=()=>{
-      clearTimeout(timer);
-      if(done) return;
-      // Verify it's a real screenshot (not a tiny error placeholder)
+      clearTimeout(t);
+      if(done||ssReady) return;
       if(img.naturalWidth>200){
-        done=true; ssUrl=src; ssReady=true;
-        setFetch('ok','✓ LinkedIn-Profil erfolgreich geladen');
-        // Show preview thumbnail
-        const thumb=document.getElementById('up-thumb');
-        if(thumb&&!thumb.src){thumb.src=src;thumb.style.display='block';}
-      } else {
-        tryNext();
-      }
+        done=true;ssUrl=src;ssReady=true;
+        const th=document.getElementById('up-thumb');
+        if(th&&!th.src.startsWith('data:')){th.src=src;th.style.display='block';}
+        setFetch('ok','✓ LinkedIn-Profil geladen');
+      } else next();
     };
-    img.onerror=()=>{ clearTimeout(timer); tryNext(); };
+    img.onerror=()=>{clearTimeout(t);next();};
     img.src=src;
   }
-
-  tryNext();
+  next();
 }
 
 function setFetch(type,msg){
@@ -763,17 +811,18 @@ function buildResult(){
             'Der Profilslogan: das wichtigste Wort-Element direkt unter deinem Namen.',
             '⚠ Nennt er einen Nutzen für den Leser – oder nur, wo du arbeitest?');
 
-  // 4) About-Bereich
+  // 4) About-Bereich – nutze autoDesc wenn vorhanden
+  const descSnippet = A.autoDesc ? `<em>"${A.autoDesc.substring(0,80)}${A.autoDesc.length>80?'…':''}"</em> – ` : '';
   const ann4 = noPos
     ? makeAnn(4,'critical','📝 About-Bereich','Optimieren',
-        'Der About-Bereich ist dein Elevator Pitch – oft der erste Text, der wirklich gelesen wird.',
+        `${descSnippet}Der About-Bereich ist dein Elevator Pitch – oft der erste Text, der wirklich gelesen wird.`,
         '✗ Ohne klare Positionierung fehlt dem About-Bereich die Substanz: Wem hilfst du? Wie? Ergebnis? CTA.')
     : isSales
     ? makeAnn(4,'warning','📝 About-Bereich','Prüfen',
-        'Für Sales muss dein About wie eine Landing Page funktionieren.',
+        `${descSnippet}Für Sales muss dein About wie eine Landing Page funktionieren.`,
         '⚠ Hat dein Text einen klaren Call-to-Action? Ohne "Schreib mir direkt" oder "Buche ein Gespräch" verschenkst du qualifizierte Besucher.')
     : makeAnn(4,'warning','📝 About-Bereich','Prüfen',
-        'Beginne mit einem Satz, der deine Zielgruppe sofort anspricht.',
+        `${descSnippet}Beginne mit einem Satz, der deine Zielgruppe sofort anspricht.`,
         '⚠ Kein Lebenslauf-Text. Struktur: Wem hilfst du → Wie → Ergebnis → CTA.');
 
   const anns=[ann1,ann2,ann3,ann4];
@@ -798,6 +847,10 @@ function buildResult(){
   if(isThought&&!postsNone) tips.push({p:'l',t:'🧠 Sei polarisierend (aber fair)',b:'Posts mit klarer These erzielen 3–5× mehr Kommentare. Widersprich einer Branchenmeinung mit Begründung. "Es kommt drauf an" ist keine Meinung – eine klare Position ist es.',tag:'Thought Lead.',tc:'t-p'});
   if(A.chFree) tips.push({p:'l',t:`💬 Zu deiner Herausforderung: „${A.chFree}"`,b:'Diese Frage schauen wir im persönlichen Gespräch konkret an – damit du eine Lösung bekommst, die zu genau deiner Situation passt.',tag:'Persönlich',tc:'t-p'});
 
+  // If we only have profile photo (not full screenshot), show photo + auto-data card
+  const hasFullScreenshot = ssReady && ssUrl && (ssUrl.includes('microlink')||ssUrl.includes('thum.io')||ssUrl.includes('mshots')||ssUrl.startsWith('data:'));
+  const hasPhotoOnly = ssReady && ssUrl && A.autoPhoto && ssUrl===A.autoPhoto;
+
   // Profile center HTML
   const profHTML = ssReady && ssUrl
     ? `<div class="screenshot-container" id="ss-container">
@@ -813,15 +866,39 @@ function buildResult(){
     : `<div class="screenshot-container" style="padding:0">${getMockup()}</div>`;
 
   function getMockup(){
+    // If we extracted profile data via CORS proxy, show a rich profile card
+    if(A.autoHeadline || A.autoPhoto){
+      return `<div style="background:white;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+        <div style="height:120px;background:linear-gradient(135deg,var(--blue),var(--blue-dk));position:relative">
+          ${badgePos.slice(0,2).map((pos,i)=>{const a=anns[i];return `<div class="a-badge ${a.cls}" style="position:absolute;top:${i===0?'30%':'auto'};bottom:${i===1?'-20px':'auto'};left:${i===0?'55%':'80px'};transform:translate(-50%,-50%);z-index:10"><div class="a-badge-inner">${i+1}</div><div class="badge-label">${a.title}</div></div>`;}).join('')}
+        </div>
+        <div style="padding:0 24px 24px;position:relative">
+          <div style="display:flex;align-items:flex-end;gap:16px;margin-top:-40px;margin-bottom:12px">
+            ${A.autoPhoto?`<img src="${A.autoPhoto}" style="width:80px;height:80px;border-radius:50%;border:3px solid white;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`:'<div style="width:80px;height:80px;border-radius:50%;background:var(--blue-lt);border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">👤</div>'}
+            <div style="padding-bottom:4px">
+              <div style="font-weight:800;font-size:17px;color:var(--black)">${A.autoName||A.name}</div>
+              <div style="font-size:13px;color:var(--gray);margin-top:2px">${A.url}</div>
+            </div>
+          </div>
+          <div style="background:var(--gray-lt);border:1px solid var(--border);border-radius:8px;padding:12px 14px;position:relative">
+            ${badgePos.slice(2).map((pos,i)=>{const a=anns[i+2];return `<div class="a-badge ${a.cls}" style="position:absolute;top:${i===0?'-12px':'auto'};bottom:${i===1?'-12px':'auto'};right:12px;z-index:10"><div class="a-badge-inner">${i+3}</div><div class="badge-label">${a.title}</div></div>`;}).join('')}
+            <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:6px">✏️ Erkannter Profilslogan</div>
+            <div style="font-size:14px;font-weight:600;color:var(--dark);font-style:italic">"${A.autoHeadline||'(Slogan nicht erkannt)'}"</div>
+            ${A.autoDesc?`<div style="font-size:12px;color:var(--gray);margin-top:8px;line-height:1.5">${A.autoDesc.substring(0,140)}…</div>`:''}
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--gray);text-align:center">💡 Vollständige visuelle Analyse: Screenshot in Schritt 1 hochladen</div>
+        </div>
+      </div>`;
+    }
+    // Standard fallback
     return `<div style="background:var(--pink-lt);border:2px dashed var(--pink);border-radius:var(--r);padding:40px 24px;text-align:center">
       <div style="font-size:48px;margin-bottom:14px">📸</div>
-      <div style="font-size:17px;font-weight:800;color:var(--pink);margin-bottom:8px">Kein Screenshot hochgeladen</div>
+      <div style="font-size:17px;font-weight:800;color:var(--pink);margin-bottom:8px">Kein Profil geladen</div>
       <div style="font-size:14px;color:#9c1256;line-height:1.6;max-width:360px;margin:0 auto">
-        Für die visuelle Analyse mit nummerierten Markierungen direkt an deinem Profil ist ein Screenshot nötig.<br>
-        <strong>Tipp:</strong> Gehe auf linkedin.com/in/${handle}, mache einen Screenshot und lade ihn in Schritt 1 hoch.
+        Für die visuelle Analyse bitte Screenshot hochladen (<strong>Cmd+Shift+4</strong> auf Mac).
       </div>
       <div style="margin-top:18px;display:flex;justify-content:center;gap:14px;flex-wrap:wrap">
-        ${anns.map((a,i)=>`<div style="background:${a.cls==='critical'?'var(--red)':a.cls==='warning'?'var(--orange)':'var(--green)'};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;font-family:'Inter',sans-serif">${i+1}</div>`).join('')}
+        ${anns.map((a,i)=>`<div style="background:${a.cls==='critical'?'var(--red)':a.cls==='warning'?'var(--orange)':'var(--green)'};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px">${i+1}</div>`).join('')}
       </div>
     </div>`;
   }
