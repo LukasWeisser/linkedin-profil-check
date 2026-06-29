@@ -308,7 +308,7 @@ textarea{resize:vertical;min-height:90px}
   <div class="step-card active" id="s1">
     <div class="step-num"><div class="step-dot">1</div>Schritt 1 von 6</div>
     <h2>Dein LinkedIn-Profil</h2>
-    <p class="step-desc">Wir rufen dein Profil automatisch ab und analysieren es zusammen mit deinen Antworten auf deine Ziele.</p>
+    <p class="step-desc">Gib deinen Namen und Profillink ein – deine Profilvorschau erscheint sofort.</p>
     <div class="fg">
       <label class="fl">Dein Name *</label>
       <input type="text" id="i-name" placeholder="z. B. Anna Müller" autocomplete="name" oninput="onNameInput(this.value)">
@@ -316,31 +316,15 @@ textarea{resize:vertical;min-height:90px}
     <div class="fg">
       <label class="fl">Dein LinkedIn-Profillink *</label>
       <input type="url" id="i-url" placeholder="https://www.linkedin.com/in/dein-name" oninput="onUrlInput(this.value)">
-      <div class="fetch-row" id="fetch-row" style="display:none;margin-top:8px"></div>
     </div>
 
-    <!-- Profil-Vorschau – erscheint sobald Profil geladen ist -->
-    <div id="profile-preview" style="display:none;margin-top:20px;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)"></div>
+    <!-- Profil-Karte: erscheint wenn Name + URL eingegeben sind -->
+    <div id="profile-preview" style="display:none;margin-top:20px"></div>
 
-    <!-- Upload zone – fallback if auto-screenshot fails -->
-    <div id="upload-section">
-      <div class="fg" style="margin-top:6px">
-        <label class="fl">Screenshot deines LinkedIn-Profils <span style="color:var(--gray);font-weight:500;text-transform:none;letter-spacing:0">(wird automatisch geladen – oder manuell hochladen)</span></label>
-        <div style="background:var(--blue-lt);border:1px solid var(--blue);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--blue);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px" id="fetch-hint">
-          💡 Wir versuchen, dein Profil automatisch zu laden. Falls das nicht klappt: <strong>Cmd+Shift+4</strong> (Mac) oder <strong>Windows+Shift+S</strong> (PC) und Screenshot hier hochladen.
-        </div>
-        <div class="upzone" id="upzone" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
-          <input type="file" accept="image/*" onchange="handleUpload(this)">
-          <div class="up-icon">📸</div>
-          <div class="up-lbl">Screenshot hier ablegen oder klicken</div>
-          <div class="up-sub">Vollständige LinkedIn-Profilseite · PNG oder JPG</div>
-        </div>
-        <img id="up-thumb" class="up-thumb">
-        <div id="up-done" class="up-done">✓ Screenshot hochgeladen – perfekt!</div>
-      </div>
-    </div>
+    <!-- Versteckter Foto-Upload (ausgelöst per Klick auf Karte) -->
+    <input type="file" id="card-photo-input" accept="image/*" style="display:none" onchange="handleCardPhoto(this)">
 
-    <button class="btn btn-primary" id="s1-weiter" onclick="valS1()" disabled style="opacity:.4;cursor:not-allowed">Weiter →</button>
+    <button class="btn btn-primary" id="s1-weiter" onclick="valS1()" disabled style="opacity:.4;cursor:not-allowed;margin-top:8px">Weiter →</button>
     <button class="btn btn-back" onclick="go(0)">← Zurück</button>
   </div>
 
@@ -484,7 +468,7 @@ textarea{resize:vertical;min-height:90px}
 </div><!-- /content -->
 
 <script>
-const A = { goals:[], ch:[], dkPos:false };
+const A = { goals:[], ch:[], dkPos:false, cardPhoto:'', autoPhoto:'', autoHeadline:'', autoDesc:'', autoName:'' };
 let ssUrl = null;
 let ssReady = false;
 
@@ -533,187 +517,166 @@ function togDK(){
   t.disabled=A.dkPos; if(A.dkPos) t.value='';
 }
 
-// ── Screenshot auto-fetch ──────────────────────────────
-let fetchDebounce=null;
+// ── Profil-Karte (Step 1) ─────────────────────────────
+let cardDebounce=null;
+
 function onNameInput(val){
-  // Aktualisiere den Namen in der Profilkarte, wenn die Karte bereits sichtbar ist
-  const preview=document.getElementById('profile-preview');
-  if(preview&&preview.style.display!=='none'){
-    const nameEl=preview.querySelector('[data-name]');
-    if(nameEl) nameEl.textContent=val;
-  }
+  // Name im laufenden Karten-DOM direkt updaten (falls Karte schon sichtbar)
+  const el=document.querySelector('#profile-preview [data-name]');
+  if(el) el.textContent=val;
+  clearTimeout(cardDebounce);
+  cardDebounce=setTimeout(checkAndShowCard, 400);
 }
+
 function onUrlInput(val){
-  clearTimeout(fetchDebounce);
-  ssUrl=null; ssReady=false;
-  A.autoPhoto=''; A.autoHeadline=''; A.autoDesc=''; A.autoName='';
-  setFetch('');
-  // Hide preview & disable button when URL changes
-  const preview=document.getElementById('profile-preview');
-  if(preview){preview.style.display='none';preview.innerHTML='';}
+  clearTimeout(cardDebounce);
+  // URL verändert → Card neu aufbauen nach kurzer Pause
+  cardDebounce=setTimeout(()=>{
+    checkAndShowCard();
+  }, 700);
+  // Button sofort deaktivieren während Nutzer tippt
   const btn=document.getElementById('s1-weiter');
   if(btn){btn.disabled=true;btn.style.opacity='.4';btn.style.cursor='not-allowed';}
-  if(val.length>20 && val.includes('linkedin')){
-    // Sofort Basiskarte anzeigen (mit Name + URL), dann im Hintergrund Daten nachladen
-    fetchDebounce=setTimeout(()=>{
-      A.url=val.trim();
-      showProfileCard(); // Zeigt sofort die Karte und aktiviert den Button
-      tryFetch(val.trim()); // Versucht Foto/Headline nachzuladen (optional)
-    }, 600);
+}
+
+function checkAndShowCard(){
+  const name=(document.getElementById('i-name')||{value:''}).value.trim();
+  const url=(document.getElementById('i-url')||{value:''}).value.trim();
+  if(name.length>1 && url.length>15 && url.toLowerCase().includes('linkedin')){
+    A.url=url;
+    showProfileCard();
+    // Im Hintergrund versuchen echte Daten zu holen (optional, kein Fehler wenn nicht)
+    tryFetchBackground(url);
+  } else {
+    const preview=document.getElementById('profile-preview');
+    if(preview) preview.style.display='none';
+    const btn=document.getElementById('s1-weiter');
+    if(btn){btn.disabled=true;btn.style.opacity='.4';btn.style.cursor='not-allowed';}
   }
 }
 
-let psPromise = null; // unused, kept for compat
-
-async function tryFetch(url){
-  // Hintergrund-Enrichment: versucht Foto & Headline nachzuladen und aktualisiert die Karte
-  const clean=url.split('?')[0].replace(/\/$/,'');
-
-  function decEnt(s){
-    return (s||'').replace(/&amp;/g,'&').replace(/&lt;/g,'<')
-      .replace(/&gt;/g,'>').replace(/&quot;/g,'"')
-      .replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');
-  }
-
-  function parseTitle(title){
-    const t=decEnt(title||'');
-    const dash=t.indexOf(' - ');
-    if(dash>0){
-      A.autoName=t.substring(0,dash).trim();
-      const hl=t.substring(dash+3).replace(/\s*\|\s*LinkedIn$/i,'').trim();
-      if(hl.length>2) A.autoHeadline=hl;
-    }
-  }
-
-  function applyEnrichment(){
-    if(A.autoHeadline||A.autoPhoto||A.autoDesc){
-      showProfileCard(); // Karte mit echten Daten aktualisieren
-      const inp=document.getElementById('slogan-input');
-      if(inp&&!inp.value&&A.autoHeadline) inp.value=A.autoHeadline;
-      if(A.autoPhoto){ ssUrl=A.autoPhoto; ssReady=true; }
-    }
-  }
-
-  // ── 1. Microlink Metadata API ──
-  try{
-    const r=await Promise.race([
-      fetch(`https://api.microlink.io/?url=${encodeURIComponent(clean)}`),
-      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),10000))
-    ]);
-    const d=await r.json();
-    if(d.status==='success'&&d.data){
-      parseTitle(d.data.title||'');
-      if(d.data.description) A.autoDesc=decEnt(d.data.description);
-      const photo=d.data.image?.url||'';
-      if(photo&&photo.startsWith('http')) A.autoPhoto=photo;
-      if(A.autoHeadline||A.autoPhoto){ applyEnrichment(); return; }
-    }
-  }catch(e){}
-
-  // ── 2. CORS-Proxies als Fallback ──
-  const proxies=[
-    `https://api.allorigins.win/get?url=${encodeURIComponent(clean)}`,
-    `https://corsproxy.io/?url=${encodeURIComponent(clean)}`,
-  ];
-  for(const proxyUrl of proxies){
-    try{
-      const r=await Promise.race([
-        fetch(proxyUrl),
-        new Promise((_,rej)=>setTimeout(()=>rej('timeout'),8000))
-      ]);
-      const json=await r.json();
-      const htmlStr=typeof(json.contents||json)==='string'?(json.contents||json):'';
-      if(htmlStr.length<200) continue;
-
-      const titleM=htmlStr.match(/property="og:title"\s+content="([^"]+)"/)
-                  ||htmlStr.match(/content="([^"]+)"\s+property="og:title"/);
-      const imgM  =htmlStr.match(/property="og:image"\s+content="([^"]+)"/)
-                  ||htmlStr.match(/content="([^"]+)"\s+property="og:image"/);
-      const descM =htmlStr.match(/property="og:description"\s+content="([^"]+)"/)
-                  ||htmlStr.match(/content="([^"]+)"\s+property="og:description"/);
-
-      if(titleM) parseTitle(titleM[1]);
-      if(descM) A.autoDesc=decEnt(descM[1]);
-      if(imgM&&imgM[1]&&imgM[1].startsWith('http')) A.autoPhoto=imgM[1];
-      if(A.autoHeadline||A.autoPhoto){ applyEnrichment(); return; }
-    }catch(e){ continue; }
-  }
-  // Kein Enrichment möglich – Basiskarte bleibt wie sie ist (kein Fehler nötig)
-}
-
-// ── Profil-Karte in Schritt 1 anzeigen ────────────────
+// Haupt-Render-Funktion für die Profil-Karte
 function showProfileCard(){
   const preview=document.getElementById('profile-preview');
   if(!preview) return;
-  const name=A.autoName||A.name||(document.getElementById('i-name')||{}).value||'';
+  const name=A.autoName||(document.getElementById('i-name')||{value:''}).value.trim()||'';
   const headline=A.autoHeadline||'';
-  const photo=A.autoPhoto||'';
+  const photo=A.cardPhoto||A.autoPhoto||'';
   const desc=A.autoDesc||'';
-  const url=(A.url||(document.getElementById('i-url')||{}).value||'').split('?')[0].replace(/\/$/,'');
+  const rawUrl=(A.url||(document.getElementById('i-url')||{value:''}).value||'').split('?')[0].replace(/\/$/,'');
+  const handle=rawUrl.replace(/.*linkedin\.com\/in\//i,'').replace(/\/$/,'');
+
   preview.style.display='block';
   preview.innerHTML=`
-    <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #dde1e7">
-      <div style="height:92px;background:linear-gradient(135deg,#1479BE 0%,#0d5fa0 100%);position:relative">
-        <span style="position:absolute;top:9px;right:12px;background:rgba(255,255,255,.22);border-radius:20px;padding:3px 11px;font-size:11px;color:#fff;font-weight:700;letter-spacing:.4px">LinkedIn Vorschau</span>
+    <div style="background:#fff;border-radius:14px;overflow:hidden;border:1.5px solid #dde1e7;box-shadow:0 4px 20px rgba(0,0,0,.09)">
+      <!-- Banner -->
+      <div style="height:96px;background:linear-gradient(135deg,#1479BE,#0a5ea0);position:relative">
+        <div style="position:absolute;inset:0;opacity:.15;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,.3) 20px,rgba(255,255,255,.3) 21px)"></div>
+        <span style="position:absolute;bottom:10px;left:18px;font-size:11px;color:rgba(255,255,255,.8);font-weight:500">linkedin.com/in/${handle}</span>
+        <span style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:10px;color:#fff;font-weight:700;letter-spacing:.5px">VORSCHAU</span>
       </div>
-      <div style="padding:0 20px 18px">
-        <div style="display:flex;align-items:flex-end;gap:14px;margin-top:-40px;margin-bottom:12px">
-          ${photo
-            ?`<img src="${photo}" onerror="this.style.display='none'" style="width:76px;height:76px;border-radius:50%;border:3px solid #fff;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12)">`
-            :`<div style="width:76px;height:76px;border-radius:50%;border:3px solid #fff;background:#cce0f0;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">👤</div>`
-          }
-          <div style="padding-bottom:6px;min-width:0">
+      <!-- Profil-Body -->
+      <div style="padding:0 20px 20px">
+        <div style="display:flex;align-items:flex-end;gap:16px;margin-top:-44px;margin-bottom:14px">
+          <!-- Profilfoto (klickbar) -->
+          <div id="card-avatar"
+               onclick="document.getElementById('card-photo-input').click()"
+               title="Klicken um Profilfoto hochzuladen"
+               style="width:84px;height:84px;border-radius:50%;border:3px solid #fff;flex-shrink:0;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18);background:#cce0f0">
+            ${photo
+              ?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;display:block">`
+              :`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                  <div style="font-size:30px">👤</div>
+                  <div style="font-size:9px;color:#4a7fa5;font-weight:700;letter-spacing:.4px;margin-top:1px">FOTO</div>
+                </div>`
+            }
+          </div>
+          <!-- Name + Headline -->
+          <div style="padding-bottom:6px;min-width:0;flex:1">
             <div data-name style="font-weight:700;font-size:18px;color:#191919;line-height:1.25">${name}</div>
-            ${headline?`<div style="font-size:13px;color:#555;margin-top:3px;line-height:1.45">${headline}</div>`:''}
+            ${headline
+              ?`<div style="font-size:13px;color:#555;margin-top:3px;line-height:1.4">${headline}</div>`
+              :`<div style="font-size:12px;color:#aaa;margin-top:3px;font-style:italic">Profilslogan wird später analysiert</div>`
+            }
           </div>
         </div>
-        ${desc?`<div style="font-size:13px;color:#444;line-height:1.65;padding-top:11px;border-top:1px solid #eaeaea">${desc.substring(0,200)}${desc.length>200?'…':''}</div>`:''}
-        <a href="${url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;margin-top:12px;font-size:12px;color:#0a66c2;text-decoration:none;font-weight:600">🔗 Profil auf LinkedIn öffnen</a>
+        ${desc?`<div style="font-size:13px;color:#444;line-height:1.6;padding:10px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;margin-bottom:12px">${desc.substring(0,200)}${desc.length>200?'…':''}</div>`:''}
+        <!-- Aktionszeile -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <a href="${rawUrl}" target="_blank" rel="noopener" style="font-size:12px;color:#0a66c2;text-decoration:none;font-weight:600">🔗 Profil auf LinkedIn öffnen</a>
+          <button type="button" onclick="document.getElementById('card-photo-input').click()"
+                  style="background:#f0f7ff;border:1px solid #b3d4f5;border-radius:20px;padding:5px 14px;font-size:12px;color:#0a66c2;cursor:pointer;font-weight:600;line-height:1.4">
+            ${photo?'🔄 Foto ändern':'📷 Profilfoto hochladen'}
+          </button>
+        </div>
       </div>
     </div>
   `;
-  // Button freischalten
+
+  // "Weiter"-Button freischalten
   const btn=document.getElementById('s1-weiter');
   if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
 }
 
-function setFetch(type,msg){
-  const el=document.getElementById('fetch-row');
-  el.style.display=msg?'flex':'none';
-  if(!msg){el.innerHTML='';return;}
-  const col=type==='ok'?'var(--green)':type==='warn'?'var(--orange)':'var(--blue)';
-  const icon=type==='loading'?'<div class="spin"></div>':type==='ok'?'<span style="font-size:16px">✅</span>':'<span style="font-size:16px">⚠️</span>';
-  el.innerHTML=`${icon}<span style="color:${col};font-size:13px;font-weight:600">${msg}</span>`;
-}
-
-// ── Upload ─────────────────────────────────────────────
-function handleUpload(inp){
+// Foto aus Karte hochladen
+function handleCardPhoto(inp){
   const f=inp.files[0];if(!f)return;
   const rd=new FileReader();
   rd.onload=e=>{
+    A.cardPhoto=e.target.result;
     A.imgData=e.target.result;
     ssUrl=e.target.result;ssReady=true;
-    const thumb=document.getElementById('up-thumb');
-    thumb.src=e.target.result;thumb.style.display='block';
-    document.getElementById('up-done').style.display='block';
-    document.getElementById('upzone').style.borderColor='var(--green)';
-    setFetch('ok','✓ Screenshot hochgeladen und bereit');
-    // Screenshot hochgeladen → Button freischalten
-    const btn=document.getElementById('s1-weiter');
-    if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+    // Avatar direkt im DOM updaten (ohne kompletten Re-render)
+    const av=document.getElementById('card-avatar');
+    if(av) av.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;display:block">`;
+    // Upload-Button-Text updaten
+    const btns=document.querySelectorAll('#profile-preview button');
+    btns.forEach(b=>{if(b.textContent.includes('Foto'))b.textContent='🔄 Foto ändern';});
   };
   rd.readAsDataURL(f);
 }
-function handleDrop(e){
-  e.preventDefault();
-  document.getElementById('upzone').classList.remove('drag');
-  const f=e.dataTransfer.files[0];
-  if(f&&f.type.startsWith('image/')){
-    const inp=document.querySelector('#upzone input');
-    const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;
-    handleUpload(inp);
+
+// Hintergrund-Enrichment: versucht Headline & Beschreibung von LinkedIn zu holen
+// (kein Fehler wenn nicht erfolgreich – Karte bleibt wie sie ist)
+async function tryFetchBackground(url){
+  const clean=url.split('?')[0].replace(/\/$/,'');
+  function dec(s){return(s||'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");}
+  function parse(title){
+    const t=dec(title||'');const d=t.indexOf(' - ');
+    if(d>0){A.autoName=t.substring(0,d).trim();const hl=t.substring(d+3).replace(/\s*\|\s*LinkedIn$/i,'').trim();if(hl.length>2)A.autoHeadline=hl;}
   }
+  function enrich(){
+    if(A.autoHeadline||A.autoPhoto||A.autoDesc){
+      showProfileCard();
+      const inp=document.getElementById('slogan-input');
+      if(inp&&!inp.value&&A.autoHeadline)inp.value=A.autoHeadline;
+      if(A.autoPhoto&&!A.cardPhoto){ssUrl=A.autoPhoto;ssReady=true;}
+    }
+  }
+  // Microlink
+  try{
+    const r=await Promise.race([fetch(`https://api.microlink.io/?url=${encodeURIComponent(clean)}`),new Promise((_,j)=>setTimeout(()=>j(),8000))]);
+    if(r){const d=await r.json();if(d.status==='success'&&d.data){parse(d.data.title||'');if(d.data.description)A.autoDesc=dec(d.data.description);const p=d.data.image?.url||'';if(p&&p.startsWith('http'))A.autoPhoto=p;if(A.autoHeadline||A.autoPhoto){enrich();return;}}}
+  }catch(e){}
+  // allorigins
+  try{
+    const r=await Promise.race([fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(clean)}`),new Promise((_,j)=>setTimeout(()=>j(),8000))]);
+    if(r){const json=await r.json();const h=json.contents||'';
+      const tm=h.match(/property="og:title"\s+content="([^"]+)"/)??h.match(/content="([^"]+)"\s+property="og:title"/);
+      const im=h.match(/property="og:image"\s+content="([^"]+)"/)??h.match(/content="([^"]+)"\s+property="og:image"/);
+      const dm=h.match(/property="og:description"\s+content="([^"]+)"/)??h.match(/content="([^"]+)"\s+property="og:description"/);
+      if(tm)parse(tm[1]);if(dm)A.autoDesc=dec(dm[1]);if(im&&im[1]?.startsWith('http'))A.autoPhoto=im[1];
+      if(A.autoHeadline||A.autoPhoto){enrich();return;}
+    }
+  }catch(e){}
+  // Kein Enrichment – kein Fehler
 }
+
+// tryFetch als Alias (für ggf. andere Aufrufe)
+function tryFetch(url){return tryFetchBackground(url);}
+let psPromise=null;
+
+function setFetch(type,msg){} // leere Funktion – fetch-row nicht mehr verwendet
 
 // ── Validation ─────────────────────────────────────────
 function valS1(){
@@ -890,24 +853,17 @@ function buildResult(){
 
   // Bestimme welche Anzeige wir haben
   const hasUpload = ssReady && ssUrl && ssUrl.startsWith('data:');
-  const hasAutoData = !!(A.autoPhoto || A.autoHeadline);
+  const hasAutoData = !!(A.cardPhoto || A.autoPhoto || A.autoHeadline || A.name);
 
-  // Profil-Anzeige
-  const profHTML = hasUpload
-    // Hochgeladener Screenshot → mit Badges
-    ? `<div class="screenshot-container" id="ss-container">
-         <img src="${ssUrl}" alt="Dein LinkedIn-Profil" style="width:100%;display:block" onerror="document.getElementById('ss-container').innerHTML=getMockup()">
-         ${badgePos.map((pos,i)=>{const a=anns[i];return `<div class="a-badge ${a.cls}" style="position:absolute;top:${pos.top};left:${pos.left};transform:translate(-50%,-50%);z-index:10"><div class="a-badge-inner">${i+1}</div><div class="badge-label">${a.title}</div></div>`;}).join('')}
-       </div>`
-    // Automatisch geladene Profildaten → LinkedIn-Karte
-    : `<div class="screenshot-container" style="padding:0">${getMockup()}</div>`;
+  // Profil-Anzeige: immer die LinkedIn-Karte zeigen (ggf. mit hochgeladenem Foto obendrauf)
+  const profHTML = `<div class="screenshot-container" style="padding:0">${getMockup()}</div>`;
 
   function getMockup(){
     if(hasAutoData){
-      // ── LinkedIn-Profilkarte aus automatisch geladenen Daten ──────────────
+      // ── LinkedIn-Profilkarte ──────────────────────────────────────────────
       const nm=A.autoName||A.name||'–';
-      const hl=A.autoHeadline||'Slogan nicht erkannt';
-      const ph=A.autoPhoto||'';
+      const hl=A.autoHeadline||A.sloganText||'Slogan nicht erkannt';
+      const ph=A.cardPhoto||A.autoPhoto||''; // cardPhoto hat Priorität (manuell hochgeladen)
       const dc=A.autoDesc||'';
       const badgeCol=c=>c==='critical'?'var(--red)':c==='warning'?'var(--orange)':'var(--green)';
 
