@@ -541,101 +541,101 @@ function onUrlInput(val){
   }
 }
 
+// ── Screenshot-Versprechen (wird parallel im Hintergrund geladen) ───────────
+let psPromise = null;
+
 async function tryFetch(url){
   const clean=url.split('?')[0].replace(/\/$/,'');
-  setFetch('loading','LinkedIn-Profil wird geladen…');
+  setFetch('loading','Profil wird geladen…');
 
-  // ── Schritt 1: Profildaten via CORS-Proxy abrufen ─────────────────────────
+  // ── Parallel: Metadaten + PageSpeed-Screenshot ────────────────────────────
+  const [metaOk] = await Promise.all([
+    fetchMeta(clean),
+    startPageSpeed(clean)   // startet im Hintergrund, blockiert nicht
+  ]);
+
+  if(!metaOk && !ssReady){
+    setFetch('warn','⏳ Profil-Screenshot lädt noch (30 Sek.) – du kannst schon weitermachen ↓');
+  }
+}
+
+// ── Metadaten via CORS-Proxy (schnell, 2–5 Sek.) ─────────────────────────
+async function fetchMeta(clean){
   try {
     const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(clean)}`;
     const r=await Promise.race([
       fetch(proxy),
-      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),12000))
+      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),10000))
     ]);
     const json=await r.json();
     const html=json.contents||'';
+    if(html.length<500) return false;
 
-    if(html.length>500){
-      function decEnt(s){
-        return (s||'').replace(/&amp;/g,'&').replace(/&lt;/g,'<')
-          .replace(/&gt;/g,'>').replace(/&quot;/g,'"')
-          .replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');
-      }
-      // og:title → "Name - Headline | LinkedIn"
-      const titleM=html.match(/property="og:title"\s+content="([^"]+)"/)
-                  ||html.match(/content="([^"]+)"\s+property="og:title"/);
-      // og:image → Profilfoto
-      const imgM  =html.match(/property="og:image"\s+content="([^"]+)"/)
-                  ||html.match(/content="([^"]+)"\s+property="og:image"/);
-      // og:description
-      const descM =html.match(/property="og:description"\s+content="([^"]+)"/)
-                  ||html.match(/content="([^"]+)"\s+property="og:description"/);
-
-      // Headline extrahieren
-      if(titleM){
-        const title=decEnt(titleM[1]);
-        const dash=title.indexOf(' - ');
-        if(dash>0){
-          const hl=title.substring(dash+3).replace(/\s*\|\s*LinkedIn$/i,'').trim();
-          if(hl&&hl.length>2){
-            A.autoHeadline=hl;
-            const inp=document.getElementById('slogan-input');
-            if(inp&&!inp.value) inp.value=hl;
-          }
-        }
-        A.autoName=decEnt(titleM[1]).split(' - ')[0].trim();
-      }
-      if(descM) A.autoDesc=decEnt(descM[1]);
-
-      // Profilfoto zeigen
-      if(imgM&&imgM[1]&&imgM[1].startsWith('http')){
-        A.autoPhoto=imgM[1];
-        if(!ssReady) ssUrl=imgM[1];
-        const thumb=document.getElementById('up-thumb');
-        if(thumb&&!thumb.src.startsWith('data:')){thumb.src=imgM[1];thumb.style.display='block';}
-      }
-
-      const hlShort=A.autoHeadline
-        ?` · Slogan: "<em>${A.autoHeadline.substring(0,50)}${A.autoHeadline.length>50?'…':''}</em>"`:'';
-      setFetch('ok',`✓ Profildaten geladen${hlShort}`);
-
-      // Screenshot parallel versuchen (non-blocking)
-      tryScreenshot(clean);
-      return;
+    function decEnt(s){
+      return (s||'').replace(/&amp;/g,'&').replace(/&lt;/g,'<')
+        .replace(/&gt;/g,'>').replace(/&quot;/g,'"')
+        .replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');
     }
-  } catch(e){}
+    const titleM=html.match(/property="og:title"\s+content="([^"]+)"/)
+                ||html.match(/content="([^"]+)"\s+property="og:title"/);
+    const imgM  =html.match(/property="og:image"\s+content="([^"]+)"/)
+                ||html.match(/content="([^"]+)"\s+property="og:image"/);
+    const descM =html.match(/property="og:description"\s+content="([^"]+)"/)
+                ||html.match(/content="([^"]+)"\s+property="og:description"/);
 
-  // ── Schritt 2: Direkt Screenshot-Fallback ─────────────────────────────────
-  tryScreenshot(clean);
+    if(titleM){
+      const title=decEnt(titleM[1]);
+      const dash=title.indexOf(' - ');
+      if(dash>0){
+        const hl=title.substring(dash+3).replace(/\s*\|\s*LinkedIn$/i,'').trim();
+        if(hl&&hl.length>2){
+          A.autoHeadline=hl;
+          const inp=document.getElementById('slogan-input');
+          if(inp&&!inp.value) inp.value=hl;
+        }
+      }
+      A.autoName=decEnt(titleM[1]).split(' - ')[0].trim();
+    }
+    if(descM) A.autoDesc=decEnt(descM[1]);
+    if(imgM&&imgM[1]&&imgM[1].startsWith('http')){
+      A.autoPhoto=imgM[1];
+      if(!ssReady){ ssUrl=imgM[1]; }
+      const thumb=document.getElementById('up-thumb');
+      if(thumb&&!thumb.src.startsWith('data:')){thumb.src=imgM[1];thumb.style.display='block';}
+    }
+
+    const hlShort=A.autoHeadline
+      ?` · Slogan: "<em>${A.autoHeadline.substring(0,48)}${A.autoHeadline.length>48?'…':''}</em>"`:'';
+    setFetch('ok',`✓ Profil geladen${hlShort} · Screenshot folgt…`);
+    return true;
+  } catch(e){ return false; }
 }
 
-function tryScreenshot(clean){
-  if(ssReady) return;
-  const services=[
-    `https://api.microlink.io/?url=${encodeURIComponent(clean)}&screenshot=true&meta=false&embed=screenshot.url&viewport.width=1440`,
-    `https://image.thum.io/get/width/1440/crop/900/${encodeURIComponent(clean)}`,
-    `https://s.wordpress.com/mshots/v1/${encodeURIComponent(clean)}?w=1440`,
-  ];
-  let idx=0,done=false;
-  function next(){
-    if(done||ssReady||idx>=services.length) return;
-    const src=services[idx++];
-    const img=new Image();
-    const t=setTimeout(next,9000);
-    img.onload=()=>{
-      clearTimeout(t);
-      if(done||ssReady) return;
-      if(img.naturalWidth>200){
-        done=true;ssUrl=src;ssReady=true;
-        const th=document.getElementById('up-thumb');
-        if(th&&!th.src.startsWith('data:')){th.src=src;th.style.display='block';}
-        setFetch('ok','✓ LinkedIn-Profil geladen');
-      } else next();
-    };
-    img.onerror=()=>{clearTimeout(t);next();};
-    img.src=src;
-  }
-  next();
+// ── Google PageSpeed Screenshot (langsam, 20–40 Sek., aber zeigt echtes Profil) ──
+async function startPageSpeed(clean){
+  // Speichere Promise damit buildResult() darauf warten kann
+  psPromise = (async()=>{
+    try {
+      const api=`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(clean)}&strategy=desktop&category=performance`;
+      const ctrl=new AbortController();
+      const timer=setTimeout(()=>ctrl.abort(),50000);
+      const r=await fetch(api,{signal:ctrl.signal});
+      clearTimeout(timer);
+      const data=await r.json();
+      // Haupt-Screenshot
+      const shot=data?.lighthouseResult?.audits?.['final-screenshot']?.details?.data;
+      if(shot&&shot.startsWith('data:image')){
+        ssUrl=shot; ssReady=true;
+        // Vorschau aktualisieren
+        const thumb=document.getElementById('up-thumb');
+        if(thumb){thumb.src=shot;thumb.style.display='block';}
+        setFetch('ok','✓ LinkedIn-Profil vollständig geladen');
+        return shot;
+      }
+    } catch(e){}
+    return null;
+  })();
+  return psPromise;
 }
 
 function setFetch(type,msg){
@@ -707,12 +707,22 @@ function selP(k,v,el){
   el.classList.add('sel');
 }
 
-function valS6(){
+async function valS6(){
   const required=['header','slogan','button','employer','focus'];
   const missing=required.filter(k=>!A[k]);
   if(missing.length){alert('Bitte beantworte alle 5 Fragen für eine vollständige Analyse.');return;}
   A.sloganText = (document.getElementById('slogan-input')||{}).value||'';
   A.bannerText  = (document.getElementById('banner-input')||{}).value||'';
+
+  // Wenn PageSpeed noch läuft → kurz warten (max 15 Sek.) und Ladebalken zeigen
+  if(!ssReady && psPromise){
+    const btn=document.querySelector('#s6 .btn-primary');
+    if(btn){ btn.disabled=true; btn.textContent='⏳ Profil-Screenshot lädt…'; }
+    try { await Promise.race([psPromise, new Promise(r=>setTimeout(r,15000))]); }
+    catch(e){}
+    if(btn){ btn.disabled=false; btn.textContent='Analyse anzeigen ✨'; }
+  }
+
   buildResult();
   go('r');
 }
