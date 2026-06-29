@@ -173,6 +173,11 @@ textarea{resize:vertical;min-height:90px}
 .screenshot-container{position:relative;display:block;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:var(--gray-lt)}
 .screenshot-container img{width:100%;display:block}
 
+/* LinkedIn Badge Styling – saubere Integration */
+.LI-profile-badge{max-width:100%!important;width:100%!important;box-shadow:none!important;border:none!important}
+.LI-profile-badge-container{border:none!important;box-shadow:none!important}
+#li-badge-wrap .badge-base{width:100%}
+
 /* loading state inside container */
 .ss-loading{padding:48px;text-align:center;color:var(--gray)}
 .ss-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
@@ -553,17 +558,18 @@ function showLinkedInBadge(vanity){
   if(!preview||!vanity) return;
 
   preview.style.display='block';
+  // VERTICAL-Badge: zeigt Banner, Profilfoto, Name, Headline
   preview.innerHTML=`
-    <div style="background:#f3f2ef;border-radius:14px;padding:20px;border:1px solid #dde1e7;display:flex;flex-direction:column;align-items:center;gap:14px">
-      <div style="text-align:center;font-size:11px;color:#888;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:-6px">Dein LinkedIn-Profil</div>
+    <div style="border-radius:14px;overflow:hidden;border:1px solid #dde1e7;background:#f3f2ef">
+      <div style="font-size:11px;color:#888;font-weight:700;letter-spacing:.6px;text-transform:uppercase;text-align:center;padding:12px 0 4px">Dein LinkedIn-Profil</div>
 
-      <!-- Offizielles LinkedIn Badge Widget -->
-      <div id="li-badge-wrap" style="min-height:220px;display:flex;align-items:center;justify-content:center;width:100%">
+      <!-- VERTICAL Badge mit Banner -->
+      <div id="li-badge-wrap" style="display:flex;justify-content:center;padding:0 16px 16px">
         <div class="badge-base LI-profile-badge"
              data-locale="de_DE"
              data-size="large"
              data-theme="light"
-             data-type="HORIZONTAL"
+             data-type="VERTICAL"
              data-vanity="${vanity}"
              data-version="v1">
           <a class="badge-base__link LI-simple-link"
@@ -572,26 +578,27 @@ function showLinkedInBadge(vanity){
         </div>
       </div>
 
-      <a href="https://www.linkedin.com/in/${vanity}" target="_blank" rel="noopener"
-         style="font-size:12px;color:#0a66c2;text-decoration:none;font-weight:600">
-        🔗 Profil auf LinkedIn öffnen ↗
-      </a>
+      <div style="text-align:center;padding:0 16px 14px">
+        <a href="https://www.linkedin.com/in/${vanity}" target="_blank" rel="noopener"
+           style="font-size:12px;color:#0a66c2;text-decoration:none;font-weight:600">
+          🔗 Vollständiges Profil auf LinkedIn öffnen ↗
+        </a>
+      </div>
     </div>
   `;
 
-  // LinkedIn Badge-Script laden (oder neu rendern wenn schon geladen)
   loadLinkedInBadgeScript();
+  // Headline aus Badge-DOM extrahieren + Slogan-Feld füllen
+  scheduleBadgeExtract();
 
-  // "Weiter" freischalten
   const btn=document.getElementById('s1-weiter');
   if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
 }
 
 function loadLinkedInBadgeScript(){
-  // Script-Tag einmal laden; bei erneutem Aufruf window.LIRenderAll() aufrufen
   if(document.getElementById('li-badge-js')){
-    // Script bereits vorhanden → Badges neu rendern
     try{ if(window.LIRenderAll) window.LIRenderAll(); }catch(e){}
+    scheduleBadgeExtract();
     return;
   }
   const s=document.createElement('script');
@@ -599,28 +606,75 @@ function loadLinkedInBadgeScript(){
   s.src='https://platform.linkedin.com/badges/js/profile.js';
   s.async=true;
   s.defer=true;
+  s.onload=()=>scheduleBadgeExtract();
   document.body.appendChild(s);
 }
 
-// ── Analyse-Seite: Badge einbetten ───────────────────
+// ── Headline + Foto aus Badge-DOM auslesen ────────────
+function scheduleBadgeExtract(){
+  // Mehrfach versuchen – Badge rendert asynchron
+  [1000,2500,4500].forEach(ms=>setTimeout(extractBadgeData, ms));
+}
+
+function extractBadgeData(){
+  // Versuche Headline (Slogan) aus dem gerenderten Badge-DOM zu lesen
+  const badge=document.querySelector('.LI-profile-badge');
+  if(!badge) return;
+
+  // LinkedIn Badge-Klassen (können variieren je nach Badge-Version)
+  const titleEl = badge.querySelector(
+    '.LI-title, .LI-badge-member-info-headline, [class*="LI-title"], [class*="headline"]'
+  );
+  if(titleEl){
+    const headline=titleEl.textContent.trim();
+    if(headline && headline.length>2){
+      A.autoHeadline=headline;
+      // Slogan-Feld in Schritt 6 automatisch füllen
+      const sloganInp=document.getElementById('slogan-input');
+      if(sloganInp && !sloganInp.value) sloganInp.value=headline;
+    }
+  }
+
+  // Profilfoto-URL aus Badge auslesen (für Analyse-Karte)
+  const imgEl=badge.querySelector('img[src*="licdn"], img[src*="linkedin"]');
+  if(imgEl && imgEl.src && !A.autoPhoto){
+    A.autoPhoto=imgEl.src;
+    ssUrl=imgEl.src; ssReady=true;
+  }
+
+  // Name aus Badge auslesen
+  const nameEl=badge.querySelector('.LI-name, [class*="LI-name"]');
+  if(nameEl && nameEl.textContent.trim()) A.autoName=nameEl.textContent.trim();
+}
+
+// ── Analyse-Seite: Profil-Badge (Vollansicht mit Banner) ─
 function getResultBadge(){
   const vanity=A.liVanity||extractVanity(A.url||'');
   if(!vanity) return '';
   return `
-    <div style="background:#f3f2ef;border-radius:12px;padding:18px;margin-bottom:20px;border:1px solid #dde1e7;text-align:center">
-      <div style="font-size:11px;color:#888;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px">Analysiertes Profil</div>
-      <div style="display:flex;justify-content:center">
+    <div style="background:#f3f2ef;border-radius:14px;overflow:hidden;border:1px solid #dde1e7;margin-bottom:24px">
+      <div style="font-size:11px;color:#888;font-weight:700;letter-spacing:.6px;text-transform:uppercase;text-align:center;padding:14px 0 6px">
+        📋 Analysiertes LinkedIn-Profil
+      </div>
+      <!-- VERTICAL Badge – zeigt Banner + Profilfoto + Name + Headline -->
+      <div style="display:flex;justify-content:center;padding:0 20px 16px">
         <div class="badge-base LI-profile-badge"
              data-locale="de_DE"
              data-size="large"
              data-theme="light"
-             data-type="HORIZONTAL"
+             data-type="VERTICAL"
              data-vanity="${vanity}"
              data-version="v1">
           <a class="badge-base__link LI-simple-link"
              href="https://www.linkedin.com/in/${vanity}?trk=profile-badge"
              target="_blank">${vanity}</a>
         </div>
+      </div>
+      <div style="text-align:center;padding:0 16px 14px">
+        <a href="https://www.linkedin.com/in/${vanity}" target="_blank" rel="noopener"
+           style="font-size:12px;color:#0a66c2;text-decoration:none;font-weight:600">
+          🔗 Vollständiges Profil auf LinkedIn öffnen ↗
+        </a>
       </div>
     </div>
   `;
