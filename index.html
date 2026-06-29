@@ -100,6 +100,11 @@ textarea{resize:vertical;min-height:90px}
 .fetch-row .spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ───── PROFILE CHECK STEP ───── */
+.pcheck-item{background:var(--gray-lt);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.pcheck-q{font-size:14px;font-weight:500;color:var(--dark);margin-bottom:12px;line-height:1.5}
+.pcheck-opts{margin:0}
+
 /* upload zone */
 .upzone{border:2px dashed var(--border);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;background:var(--gray-lt)}
 .upzone:hover,.upzone.drag{border-color:var(--blue);background:var(--blue-lt)}
@@ -301,7 +306,7 @@ textarea{resize:vertical;min-height:90px}
 
   <!-- STEP 1 -->
   <div class="step-card active" id="s1">
-    <div class="step-num"><div class="step-dot">1</div>Schritt 1 von 5</div>
+    <div class="step-num"><div class="step-dot">1</div>Schritt 1 von 6</div>
     <h2>Dein LinkedIn-Profil</h2>
     <p class="step-desc">Wir rufen dein Profil automatisch ab und analysieren es zusammen mit deinen Antworten auf deine Ziele.</p>
     <div class="fg">
@@ -338,7 +343,7 @@ textarea{resize:vertical;min-height:90px}
 
   <!-- STEP 2 -->
   <div class="step-card" id="s2">
-    <div class="step-num"><div class="step-dot">2</div>Schritt 2 von 5</div>
+    <div class="step-num"><div class="step-dot">2</div>Schritt 2 von 6</div>
     <h2>Wofür nutzt du LinkedIn?</h2>
     <p class="step-desc">Wir prüfen, ob dein Profil zu diesen Zielen passt. Mehrere Antworten möglich.</p>
     <div class="mopts">
@@ -356,7 +361,7 @@ textarea{resize:vertical;min-height:90px}
 
   <!-- STEP 3 -->
   <div class="step-card" id="s3">
-    <div class="step-num"><div class="step-dot">3</div>Schritt 3 von 5</div>
+    <div class="step-num"><div class="step-dot">3</div>Schritt 3 von 6</div>
     <h2>Wie viele Beiträge schreibst du pro Woche?</h2>
     <p class="step-desc">Wir prüfen, ob deine Aktivität zu deinen Zielen passt.</p>
     <div class="ropts">
@@ -371,7 +376,7 @@ textarea{resize:vertical;min-height:90px}
 
   <!-- STEP 4 -->
   <div class="step-card" id="s4">
-    <div class="step-num"><div class="step-dot">4</div>Schritt 4 von 5</div>
+    <div class="step-num"><div class="step-dot">4</div>Schritt 4 von 6</div>
     <h2>Was fällt dir auf LinkedIn am schwersten?</h2>
     <p class="step-desc">Mehrere Antworten möglich.</p>
     <div class="mopts">
@@ -388,7 +393,7 @@ textarea{resize:vertical;min-height:90px}
 
   <!-- STEP 5 -->
   <div class="step-card" id="s5">
-    <div class="step-num"><div class="step-dot">5</div>Schritt 5 von 5</div>
+    <div class="step-num"><div class="step-dot">5</div>Schritt 5 von 6</div>
     <h2>Wie ist deine Positionierung?</h2>
     <p class="step-desc">Beschreibe in einem Satz, wem du hilfst und womit. Wir vergleichen das mit deinem Profil.</p>
     <div class="fg">
@@ -396,8 +401,66 @@ textarea{resize:vertical;min-height:90px}
       <textarea id="pos-txt" placeholder="Ich helfe [Zielgruppe], [Problem zu lösen / Ziel zu erreichen], indem ich [Methode / Angebot]."></textarea>
     </div>
     <button class="dkbtn" id="dkbtn" onclick="togDK()"><span style="font-size:20px">🤷</span>Ich weiß es nicht genau</button>
-    <button class="btn btn-primary" onclick="valS5()" style="margin-top:16px">Analyse anzeigen ✨</button>
+    <button class="btn btn-primary" onclick="valS5()" style="margin-top:16px">Weiter →</button>
     <button class="btn btn-back" onclick="go(4)">← Zurück</button>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card" id="s6">
+    <div class="step-num"><div class="step-dot">6</div>Schritt 6 von 6</div>
+    <h2>Dein Profil auf einen Blick</h2>
+    <p class="step-desc">Schau kurz auf dein LinkedIn-Profil und beantworte diese 5 Fragen. Das macht deine Analyse komplett individuell.</p>
+
+    <div style="display:flex;flex-direction:column;gap:22px">
+
+      <div class="pcheck-item">
+        <div class="pcheck-q">🖼️ <strong>Header-Bild:</strong> Kommuniziert dein Banner klar, was du machst – und ist der Text gut lesbar (nicht vom Profilbild verdeckt)?</div>
+        <div class="ropts pcheck-opts">
+          <div class="ropt" onclick="selP('header','ja',this)">✅ Ja, klar und professionell</div>
+          <div class="ropt" onclick="selP('header','teils',this)">🟡 Teils – ausbaufähig</div>
+          <div class="ropt" onclick="selP('header','nein',this)">❌ Nein / kein Banner</div>
+        </div>
+      </div>
+
+      <div class="pcheck-item">
+        <div class="pcheck-q">✏️ <strong>Slogan (direkt unter deinem Namen):</strong> Sind die ersten 6–7 Worte stark, eindeutig und zielgruppenspezifisch? (Dieser Text erscheint auch unter deinen Kommentaren.)</div>
+        <div class="ropts pcheck-opts">
+          <div class="ropt" onclick="selP('slogan','ja',this)">✅ Ja, klar und präzise</div>
+          <div class="ropt" onclick="selP('slogan','teils',this)">🟡 Teils – zu allgemein</div>
+          <div class="ropt" onclick="selP('slogan','nein',this)">❌ Nur Jobtitel / generisch</div>
+        </div>
+      </div>
+
+      <div class="pcheck-item">
+        <div class="pcheck-q">🔘 <strong>Profilbutton:</strong> Hast du einen Button zu einer weiterführenden Seite (z. B. Website, Calendly)?</div>
+        <div class="ropts pcheck-opts">
+          <div class="ropt" onclick="selP('button','ja',this)">✅ Ja, ist eingerichtet</div>
+          <div class="ropt" onclick="selP('button','nein',this)">❌ Nein, fehlt</div>
+        </div>
+      </div>
+
+      <div class="pcheck-item">
+        <div class="pcheck-q">🏢 <strong>Arbeitgeber getaggt:</strong> Ist dein Unternehmen als verlinkte Unternehmensseite (nicht nur als Text) in deiner Berufserfahrung eingetragen?</div>
+        <div class="ropts pcheck-opts">
+          <div class="ropt" onclick="selP('employer','ja',this)">✅ Ja, verlinkt</div>
+          <div class="ropt" onclick="selP('employer','nein',this)">❌ Nein / nur Text</div>
+        </div>
+      </div>
+
+      <div class="pcheck-item">
+        <div class="pcheck-q">🎯 <strong>Fokusbereich:</strong> Hast du einen Fokusbereich eingerichtet? (Direkt unter den Kontaktinfos – eines der prominentesten Felder.)</div>
+        <div class="ropts pcheck-opts">
+          <div class="ropt" onclick="selP('focus','ja',this)">✅ Ja, eingerichtet</div>
+          <div class="ropt" onclick="selP('focus','nein',this)">❌ Nein / weiß nicht</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:32px">
+      <button class="btn btn-back" onclick="go(5)">← Zurück</button>
+      <button class="btn btn-primary" onclick="valS6()">Analyse anzeigen ✨</button>
+    </div>
   </div>
 
   <!-- RESULT -->
@@ -429,7 +492,7 @@ function go(step){
   document.querySelectorAll('.step-card').forEach(c=>c.classList.remove('active'));
   const el = step==='r' ? document.getElementById('result') : document.getElementById('s'+step);
   if(el) el.classList.add('active');
-  const pct = step==='r' ? 100 : (step/5)*100;
+  const pct = step==='r' ? 100 : (step/6)*100;
   document.getElementById('pb').style.width = pct+'%';
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -547,6 +610,20 @@ function valCh(){
 }
 function valS5(){
   A.pos=A.dkPos?null:document.getElementById('pos-txt').value.trim();
+  go(6);
+}
+
+// ── Profile element selection ──────────────────────────
+function selP(k,v,el){
+  A[k]=v;
+  el.closest('.pcheck-opts').querySelectorAll('.ropt').forEach(r=>r.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function valS6(){
+  const required=['header','slogan','button','employer','focus'];
+  const missing=required.filter(k=>!A[k]);
+  if(missing.length){alert('Bitte beantworte alle 5 Fragen für eine vollständige Analyse.');return;}
   buildResult();
   go('r');
 }
@@ -565,7 +642,14 @@ function buildResult(){
   // Score
   const actPct=A.posts==='5+'?100:A.posts==='3-4'?75:A.posts==='1-2'?40:5;
   const posPct=noPos?0:A.pos&&A.pos.length>40?100:55;
-  const total=Math.min(99,Math.round(actPct*.4+posPct*.45+(g.length?10:0)*.15));
+  // Profile element score (0-100)
+  const hScore=A.header==='ja'?20:A.header==='teils'?10:0;
+  const sScore=A.slogan==='ja'?25:A.slogan==='teils'?12:0;
+  const bScore=A.button==='ja'?20:0;
+  const eScore=A.employer==='ja'?15:0;
+  const fScore=A.focus==='ja'?20:0;
+  const profilePct=hScore+sScore+bScore+eScore+fScore;
+  const total=Math.min(99,Math.round(actPct*.3+posPct*.35+profilePct*.25+(g.length?10:0)*.1));
   const grade=total>=70?{l:'Gutes Fundament',c:'g-h'}:total>=40?{l:'Klares Potenzial',c:'g-m'}:{l:'Dringend optimieren',c:'g-l'};
   const sc=total>=70?'#6ee7b7':total>=40?'#fcd34d':'#fca5a5';
   const r=58,circ=2*Math.PI*r,dash=(total/100)*circ;
@@ -692,6 +776,89 @@ function buildResult(){
       <div class="ac-insight">${a.insight}</div>
     </div>`).join('');
 
+  // ── 5-Kriterien Profil-Check ───────────────────────────
+  function makeCheck(icon,title,status,body,tip){
+    const isOk=status==='ok', isWarn=status==='warn', isCrit=status==='crit';
+    const col=isOk?'var(--green)':isWarn?'var(--orange)':'var(--red)';
+    const bg=isOk?'#f0fdf4':isWarn?'#fffbeb':'#fef2f2';
+    const badge=isOk?'✅ Gut aufgestellt':isWarn?'⚠️ Optimierungspotenzial':'🔴 Dringend handeln';
+    return `<div style="border:1.5px solid ${col};border-radius:10px;padding:18px 20px;background:${bg}">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="font-size:24px;line-height:1;flex-shrink:0">${icon}</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+            <span style="font-weight:800;font-size:15px;color:var(--black)">${title}</span>
+            <span style="background:${col};color:white;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px">${badge}</span>
+          </div>
+          <div style="font-size:14px;color:var(--dark);line-height:1.55;margin-bottom:${tip?'8px':'0'}">${body}</div>
+          ${tip?`<div style="font-size:13px;color:${col};font-weight:600;line-height:1.5">→ ${tip}</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Header
+  const headerCheck = A.header==='ja'
+    ? makeCheck('🖼️','Header-Bild','ok',
+        `Dein Banner kommuniziert klar. Stelle sicher, dass das Profilbild keinen wichtigen Text verdeckt – das passiert häufig und fällt Besuchern sofort auf.`,
+        null)
+    : A.header==='teils'
+    ? makeCheck('🖼️','Header-Bild','warn',
+        `Dein Banner ist vorhanden, hat aber noch Potenzial. ${isSales?'Sales-Kunden entscheiden in 3 Sekunden – dein Banner ist der erste Eindruck.':isThought?'Als Thought Leader muss dein Banner auf Anhieb zeigen, wofür du stehst.':'Der Banner ist deine kostenlose Werbefläche.'}`,
+        `Zeigt er klar: WER du bist, WEM du hilfst und WAS dich auszeichnet? Ideal: Positionierung + Zielgruppe + ein starkes visuelles Element.`)
+    : makeCheck('🖼️','Header-Bild','crit',
+        `Du nutzt keinen Banner oder er hat keine Aussagekraft. Das ist die erste Fläche, die jeder Besucher sieht – und sie ist komplett leer.`,
+        `Erstelle einen Banner mit deiner Positionierung, Zielgruppe und einem klaren Versprechen. Tools: Canva (kostenlos). Größe: 1584 × 396 px.`);
+
+  // Slogan
+  const sloganCheck = A.slogan==='ja'
+    ? makeCheck('✏️','Slogan (unter dem Namen)','ok',
+        `Sehr gut – die ersten 6–7 Worte sind stark. Denk daran: Dieser Text erscheint auch bei jedem Kommentar, den du schreibst. Du machst damit bei jedem Interaktion Werbung für deine Positionierung.`,
+        null)
+    : A.slogan==='teils'
+    ? makeCheck('✏️','Slogan (unter dem Namen)','warn',
+        `Dein Slogan ist vorhanden, aber noch zu allgemein. Er erscheint bei JEDEM Kommentar, den du schreibst – und ist damit eines deiner meistgesehenen Textelemente auf LinkedIn.`,
+        `Formel: "Ich helfe [konkrete Zielgruppe] dabei, [konkretes Ergebnis]." Die ersten 6–7 Worte müssen sofort Neugier wecken und die Zielgruppe ansprechen.`)
+    : makeCheck('✏️','Slogan (unter dem Namen)','crit',
+        `Dein Slogan ist nur dein Jobtitel oder zu generisch. Das ist eine der größten verpassten Chancen auf LinkedIn. Bei jedem Kommentar, den du schreibst, sehen Hunderte Menschen diesen Text – und klicken nicht weiter.`,
+        `Ersetze den Jobtitel sofort durch eine zielgruppenspezifische Aussage. Beispiel statt "Sales Manager": "Ich helfe B2B-Unternehmen, ihren Sales-Cycle um 40% zu verkürzen."`);
+
+  // Button
+  const buttonCheck = A.button==='ja'
+    ? makeCheck('🔘','Profilbutton','ok',
+        `Du hast einen Button – das ist einer der meistgenutzten aber am wenigsten beachteten Conversion-Hebel auf LinkedIn. Stelle sicher, dass er auf eine klare Landing Page oder deinen Kalender verlinkt.`,
+        null)
+    : makeCheck('🔘','Profilbutton','crit',
+        `Dir fehlt ein Profilbutton! LinkedIn gibt dir einen kostenlosen CTA direkt unter deinem Profilbild – eine der prominentesten Stellen im gesamten Profil – und du nutzt ihn nicht.`,
+        `Gehe zu "Profil bearbeiten" → "Profilbutton hinzufügen" und verlinke auf ${isSales?'dein Anfrageformular oder deinen Kalender (z. B. Calendly).':'deine Website, Landing Page oder deinen Kalender.'}`);
+
+  // Employer
+  const employerCheck = A.employer==='ja'
+    ? makeCheck('🏢','Arbeitgeber getaggt','ok',
+        `Dein Unternehmen ist als Unternehmensseite verlinkt. Das erhöht die Glaubwürdigkeit deines Profils und ermöglicht es Besuchern, auch die Unternehmensseite zu entdecken.`,
+        null)
+    : makeCheck('🏢','Arbeitgeber getaggt','warn',
+        `Dein Arbeitgeber ist nicht als verlinktes Unternehmen eingetragen – nur als Text. Das kostet Glaubwürdigkeit: Besucher können das Unternehmen nicht mit einem Klick verifizieren oder besuchen.`,
+        `Gehe zu "Berufserfahrung" → Stelle bearbeiten → Firmenname eingeben und die offizielle LinkedIn-Unternehmensseite auswählen.`);
+
+  // Focus area
+  const focusCheck = A.focus==='ja'
+    ? makeCheck('🎯','Fokusbereich','ok',
+        `Sehr gut! Der Fokusbereich ist eines der prominentesten und meist übersehenen Elemente – direkt unter den Kontaktinfos. Du nutzt ihn bereits.`,
+        null)
+    : makeCheck('🎯','Fokusbereich','crit',
+        `Du hast keinen Fokusbereich eingerichtet! Das ist eines der sichtbarsten Felder auf deinem Profil – direkt unter deinen Kontaktinfos. Es erscheint prominent auf deiner Profilseite und die meisten Menschen übersehen es völlig.`,
+        `Gehe zu "Profil bearbeiten" → scrolle zu "Fokusbereich hinzufügen" und wähle, was du hervorheben möchtest (z. B. Dienstleistungen, Produkte, Beiträge, Projekte).`);
+
+  const profileChecksHTML = `
+    <div style="margin:32px 0">
+      <div class="section-title">🔎 Deine 5 Profil-Elemente im Detail</div>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:18px">Basierend auf deinen Angaben – 100% individuell für dein Profil.</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        ${headerCheck}${sloganCheck}${buttonCheck}${employerCheck}${focusCheck}
+      </div>
+    </div>`;
+
   const crossHTML = cross.length ? `<div class="cross-section">
     <h4>🔍 Konsistenz-Check: Passt dein Profil zu deinen Zielen?</h4>
     ${cross.map(r=>`<div class="cross-row"><span>▸</span><span>${r}</span></div>`).join('')}
@@ -752,6 +919,8 @@ function buildResult(){
       <div style="position:relative">${profHTML}</div>
       <div class="analysis-grid">${cardsHTML}</div>
     </div>
+
+    ${profileChecksHTML}
 
     ${crossHTML}
 
