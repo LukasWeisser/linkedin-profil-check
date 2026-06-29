@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkedIn Profil-Check | Branding People</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#1479BE;
+  --blue-dk:#0d5fa0;
+  --blue-lt:#e8f3fb;
+  --pink:#E8197A;
+  --pink-lt:#fdedf4;
+  --black:#111111;
+  --dark:#1a1a1a;
+  --gray:#6b7280;
+  --gray-lt:#f9fafb;
+  --border:#e5e7eb;
+  --white:#ffffff;
+  --green:#057642;
+  --orange:#d97706;
+  --red:#dc2626;
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--white);color:var(--dark);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* ───── LOGO ───── */
+.bp-logo-wrap{display:flex;flex-direction:column;line-height:1;gap:0;cursor:default}
+.bp-L1{font-family:'Barlow Condensed','Arial Black',Impact,Arial,sans-serif;font-weight:900;color:var(--blue);text-transform:uppercase;letter-spacing:1px;line-height:.95}
+.bp-L2{font-family:'Barlow Condensed','Arial Black',Impact,Arial,sans-serif;font-weight:900;color:var(--black);text-transform:uppercase;display:flex;align-items:center;line-height:.95;letter-spacing:1px}
+.bp-L2 .heart{display:inline-flex;align-items:center;justify-content:center}
+.bp-L2 .heart svg{display:block}
+.bp-tag{font-family:'Inter',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:var(--dark)}
+
+/* header size */
+.hdr-logo .bp-L1{font-size:18px}
+.hdr-logo .bp-L2{font-size:20px}
+.hdr-logo .heart svg{width:18px;height:16px;margin:0 1px}
+.hdr-logo .bp-tag{font-size:6px;margin-top:3px}
+
+/* hero size */
+.hero-logo .bp-L1{font-size:52px}
+.hero-logo .bp-L2{font-size:58px}
+.hero-logo .heart svg{width:52px;height:46px;margin:0 2px}
+.hero-logo .bp-tag{font-size:11px;margin-top:6px;color:rgba(255,255,255,.7)}
+.hero-logo .bp-L1{color:#6ab5e8}
+.hero-logo .bp-L2{color:white}
+
+/* cta size */
+.cta-logo .bp-L1{font-size:26px;color:#6ab5e8}
+.cta-logo .bp-L2{font-size:30px;color:white}
+.cta-logo .heart svg{width:28px;height:25px;margin:0 2px}
+.cta-logo .bp-tag{font-size:8px;margin-top:4px;color:rgba(255,255,255,.45)}
+
+/* ───── HEADER ───── */
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:300;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.hdr-pill{background:var(--blue-lt);color:var(--blue);font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;font-family:'Inter',sans-serif}
+
+/* ───── PROGRESS ───── */
+.prog-wrap{height:4px;background:var(--border)}
+.prog-bar{height:4px;background:linear-gradient(90deg,var(--blue),var(--pink));transition:width .5s cubic-bezier(.4,0,.2,1);width:0}
+
+/* ───── HERO ───── */
+.hero{background:var(--black);padding:70px 24px 60px;text-align:center}
+.hero-stats{display:flex;justify-content:center;gap:48px;margin-top:44px;flex-wrap:wrap}
+.stat-item{text-align:center}
+.stat-num{font-family:'Barlow Condensed','Arial Black',Impact,Arial,sans-serif;font-weight:900;font-size:52px;color:var(--white);line-height:1}
+.stat-plus{color:var(--pink)}
+.stat-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.hero-desc{font-size:17px;color:rgba(255,255,255,.65);max-width:520px;margin:20px auto 0;line-height:1.6}
+.hero-sub{font-size:13px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:2px;margin-bottom:20px}
+
+/* ───── MAIN CONTENT ───── */
+.content{max-width:760px;margin:0 auto;padding:40px 20px 80px}
+
+/* ───── STEPS ───── */
+.step-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:44px 48px;display:none;animation:fadeUp .3s ease;box-shadow:0 4px 24px rgba(0,0,0,.05)}
+.step-card.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.step-num{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:20px}
+.step-dot{width:28px;height:28px;background:var(--blue);border-radius:50%;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+h2{font-size:26px;font-weight:800;margin-bottom:8px;line-height:1.25;color:var(--black)}
+.step-desc{font-size:15px;color:var(--gray);margin-bottom:28px;line-height:1.6}
+
+/* ───── FORM ───── */
+.fg{margin-bottom:18px}
+.fl{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;color:var(--dark)}
+input[type=text],input[type=url],textarea{width:100%;border:2px solid var(--border);border-radius:var(--r);padding:13px 16px;font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;color:var(--dark)}
+input:focus,textarea:focus{border-color:var(--blue)}
+input::placeholder,textarea::placeholder{color:#9ca3af}
+textarea{resize:vertical;min-height:90px}
+
+.fetch-row{margin-top:10px;min-height:24px;display:flex;align-items:center;gap:8px}
+.fetch-row .spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* upload zone */
+.upzone{border:2px dashed var(--border);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;background:var(--gray-lt)}
+.upzone:hover,.upzone.drag{border-color:var(--blue);background:var(--blue-lt)}
+.upzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.up-icon{font-size:34px;margin-bottom:10px}
+.up-lbl{font-size:15px;font-weight:600;color:var(--gray)}
+.up-sub{font-size:13px;color:#9ca3af;margin-top:4px}
+.up-thumb{width:100%;border-radius:10px;margin-top:14px;max-height:220px;object-fit:cover;display:none}
+.up-done{color:var(--green);font-size:13px;font-weight:700;margin-top:8px;display:none}
+.up-fallback{background:var(--pink-lt);border:1px solid #f5c0da;border-radius:10px;padding:14px;font-size:13px;color:#9c1256;line-height:1.5;margin-top:10px;display:none}
+
+/* ───── MULTI-SELECT ───── */
+.mopts{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.mopt{border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:13px;transition:all .15s;user-select:none}
+.mopt:hover{border-color:var(--blue);background:var(--blue-lt)}
+.mopt.sel{border-color:var(--blue);background:var(--blue-lt)}
+.mopt.sel .cb{background:var(--blue);border-color:var(--blue)}
+.mopt.sel .cb::after{opacity:1}
+.cb{width:22px;height:22px;border:2px solid #d1d5db;border-radius:6px;flex-shrink:0;position:relative;transition:all .15s;margin-top:1px}
+.cb::after{content:'';position:absolute;top:3px;left:7px;width:5px;height:9px;border:2px solid white;border-top:none;border-left:none;transform:rotate(45deg);opacity:0}
+.ot{font-size:15px;font-weight:600;color:var(--dark)}
+.os{font-size:13px;color:var(--gray);margin-top:2px}
+
+/* ───── RADIO ───── */
+.ropts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.ropt{border:2px solid var(--border);border-radius:var(--r);padding:18px 10px;text-align:center;cursor:pointer;transition:all .15s;font-size:13px;font-weight:600;color:var(--gray)}
+.ropt:hover{border-color:var(--blue);color:var(--blue)}
+.ropt.sel{border-color:var(--blue);background:var(--blue);color:white}
+.ropt .rn{font-family:'Barlow Condensed',Impact,Arial,sans-serif;font-size:30px;font-weight:900;display:block;margin-bottom:2px}
+
+/* ───── FREE FIELD ───── */
+.free-tog{color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-top:6px}
+.free-wrap{display:none;margin-top:10px}
+.free-wrap.on{display:block}
+
+/* ───── DON'T KNOW ───── */
+.dkbtn{width:100%;border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;font-size:15px;font-weight:600;color:var(--gray);display:flex;align-items:center;gap:10px;margin-top:12px;transition:all .15s;background:white;font-family:'Inter',sans-serif}
+.dkbtn:hover{border-color:var(--pink);color:var(--pink);background:var(--pink-lt)}
+.dkbtn.sel{border-color:var(--pink);color:var(--pink);background:var(--pink-lt)}
+
+/* ───── BUTTONS ───── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 30px;border-radius:28px;font-size:15px;font-weight:700;cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-primary{background:var(--blue);color:white;width:100%;margin-top:14px;box-shadow:0 4px 16px rgba(20,121,190,.25)}
+.btn-primary:hover{background:var(--blue-dk);transform:translateY(-1px);box-shadow:0 6px 22px rgba(20,121,190,.35)}
+.btn-back{background:transparent;color:var(--gray);font-size:14px;margin-top:10px;width:100%}
+.btn-back:hover{color:var(--dark)}
+.btn-hero{background:var(--pink);color:white;padding:16px 40px;font-size:16px;margin-top:32px;box-shadow:0 4px 20px rgba(232,25,122,.35)}
+.btn-hero:hover{background:#d0146b;transform:translateY(-2px);box-shadow:0 6px 26px rgba(232,25,122,.45)}
+
+/* ───── RESULT ───── */
+/* Score banner */
+.score-banner{background:var(--black);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;gap:28px;margin-bottom:32px;color:white}
+.score-ring-box{position:relative;flex-shrink:0}
+.score-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Barlow Condensed',Impact,Arial,sans-serif;font-size:40px;font-weight:900;line-height:1;color:white}
+.score-info h3{font-size:22px;font-weight:800;margin-bottom:6px}
+.grade-pill{display:inline-block;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:8px}
+.g-l{background:rgba(220,38,38,.2);color:#fca5a5}
+.g-m{background:rgba(217,119,6,.2);color:#fcd34d}
+.g-h{background:rgba(5,118,66,.2);color:#6ee7b7}
+
+/* ── ANNOTATED PROFILE SECTION ── */
+.anno-section{margin-bottom:36px}
+.section-title{font-size:20px;font-weight:800;color:var(--black);margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid var(--border)}
+
+/* Screenshot wrapper */
+.screenshot-container{position:relative;display:block;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:var(--gray-lt)}
+.screenshot-container img{width:100%;display:block}
+
+/* loading state inside container */
+.ss-loading{padding:48px;text-align:center;color:var(--gray)}
+.ss-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+
+/* annotation badge overlaid on screenshot */
+.a-badge{position:absolute;cursor:pointer;z-index:10;transform:translate(-50%,-50%);transition:transform .2s}
+.a-badge:hover{transform:translate(-50%,-50%) scale(1.15)}
+.a-badge-inner{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:white;border:2.5px solid white;box-shadow:0 2px 10px rgba(0,0,0,.35);font-family:'Inter',sans-serif}
+.a-badge.critical .a-badge-inner{background:var(--red)}
+.a-badge.warning .a-badge-inner{background:var(--orange)}
+.a-badge.good .a-badge-inner{background:var(--green)}
+/* pulse ring */
+.a-badge::before{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid;opacity:.4;animation:pulse 2s infinite}
+.a-badge.critical::before{border-color:var(--red)}
+.a-badge.warning::before{border-color:var(--orange)}
+.a-badge.good::before{border-color:var(--green)}
+@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.4}50%{transform:translate(-50%,-50%) scale(1.4);opacity:0}}
+
+/* connector line hint */
+.badge-label{position:absolute;background:var(--dark);color:white;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;transform:translateX(-50%);left:50%;top:calc(100% + 6px)}
+.a-badge:hover .badge-label{opacity:1}
+
+/* Mockup fallback */
+.profile-mockup{background:white}
+.m-banner{height:90px;background:linear-gradient(135deg,#0a4d8c,#1479BE,#4da8e0)}
+.m-body{padding:0 16px 18px;position:relative;padding-top:44px}
+.m-av{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,#bcd8ee,#ddeef8);border:3px solid white;position:absolute;top:-34px;left:16px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',Impact,Arial,sans-serif;font-size:22px;font-weight:900;color:var(--blue-dk)}
+.m-name{font-size:16px;font-weight:800;margin-bottom:4px}
+.m-hl{font-size:13px;color:var(--gray);background:var(--gray-lt);border-radius:4px;padding:3px 10px;display:inline-block;margin-bottom:10px}
+.m-about{height:12px;background:var(--gray-lt);border-radius:4px;margin-bottom:8px;width:90%}
+.m-about:last-child{width:60%}
+.m-hint{background:var(--blue-lt);border:1px dashed var(--blue);border-radius:8px;padding:12px 14px;font-size:12px;font-weight:600;color:var(--blue);line-height:1.5;margin-top:12px}
+
+/* Analysis cards grid (2-column) */
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.ac-card{border-radius:var(--r);padding:18px;border:2px solid var(--border);position:relative;overflow:hidden}
+.ac-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.ac-card.critical{border-color:#fee2e2}
+.ac-card.critical::before{background:var(--red)}
+.ac-card.warning{border-color:#fef3c7}
+.ac-card.warning::before{background:var(--orange)}
+.ac-card.good{border-color:#d1fae5}
+.ac-card.good::before{background:var(--green)}
+.ac-num{width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:900;color:white;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-family:'Inter',sans-serif}
+.ac-card.critical .ac-num{background:var(--red)}
+.ac-card.warning .ac-num{background:var(--orange)}
+.ac-card.good .ac-num{background:var(--green)}
+.ac-title{font-size:14px;font-weight:800;margin-bottom:6px;color:var(--dark)}
+.ac-status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.ac-card.critical .ac-status{color:var(--red)}
+.ac-card.warning .ac-status{color:var(--orange)}
+.ac-card.good .ac-status{color:var(--green)}
+.ac-body{font-size:13px;color:var(--gray);line-height:1.55}
+.ac-insight{font-size:12.5px;color:var(--dark);font-weight:600;margin-top:9px;padding-top:9px;border-top:1px solid rgba(0,0,0,.07);line-height:1.45}
+
+/* Cross analysis */
+.cross-section{background:var(--pink-lt);border:1px solid #f5c0da;border-radius:var(--r);padding:20px 22px;margin-bottom:28px}
+.cross-section h4{font-size:15px;font-weight:800;color:var(--pink);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.cross-row{font-size:13px;color:#444;margin-bottom:8px;display:flex;gap:9px;align-items:flex-start;line-height:1.5}
+.cross-row:last-child{margin-bottom:0}
+
+/* Tips */
+.tips-section h3{font-size:20px;font-weight:800;margin-bottom:18px;color:var(--black)}
+.tip-card{border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;display:flex;gap:14px;transition:border-color .15s,box-shadow .15s}
+.tip-card:hover{border-color:var(--blue);box-shadow:0 2px 12px rgba(20,121,190,.1)}
+.tip-n{flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:white;margin-top:1px;font-family:'Inter',sans-serif}
+.tip-title{font-size:14px;font-weight:800;margin-bottom:5px;color:var(--dark)}
+.tip-body{font-size:13px;color:var(--gray);line-height:1.6}
+.tip-tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;margin-top:8px}
+.t-b{background:var(--blue-lt);color:var(--blue)}
+.t-p{background:var(--pink-lt);color:var(--pink)}
+.t-g{background:#d1fae5;color:var(--green)}
+.t-r{background:#fee2e2;color:var(--red)}
+
+/* ───── CTA BOX ───── */
+.cta-box{background:var(--black);border-radius:var(--r);padding:44px;text-align:center;margin-top:36px}
+.cta-box h3{font-size:26px;font-weight:800;color:white;margin-top:20px;margin-bottom:10px}
+.cta-box p{font-size:15px;color:rgba(255,255,255,.65);margin-bottom:28px;line-height:1.7;max-width:460px;margin-left:auto;margin-right:auto}
+.cta-btn{display:inline-block;background:var(--pink);color:white;padding:16px 40px;border-radius:28px;font-size:16px;font-weight:700;text-decoration:none;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(232,25,122,.4);transition:all .15s}
+.cta-btn:hover{background:#d0146b;transform:translateY(-2px);box-shadow:0 6px 26px rgba(232,25,122,.5)}
+.trust-row{display:flex;justify-content:center;gap:28px;margin-top:22px;flex-wrap:wrap}
+.trust-item{font-size:12px;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:5px;font-weight:600}
+
+/* ───── RESPONSIVE ───── */
+@media(max-width:680px){
+  .step-card{padding:28px 20px}
+  .hero{padding:50px 20px 40px}
+  .hero-logo .bp-L1{font-size:38px}
+  .hero-logo .bp-L2{font-size:42px}
+  .hero-logo .heart svg{width:38px;height:34px}
+  .hero-stats{gap:28px}
+  .stat-num{font-size:40px}
+  .analysis-grid{grid-template-columns:1fr}
+  .ropts{grid-template-columns:repeat(2,1fr)}
+  .score-banner{flex-direction:column;text-align:center}
+  .header{padding:12px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ───── HEADER ───── -->
+<header class="header">
+  <a href="#" onclick="go(0);return false;">
+    <img src="https://brandingpeople.de/wp-content/uploads/2024/09/Logo-2-300x128.png" alt="Branding People" style="height:44px;width:auto;display:block">
+  </a>
+  <div class="hdr-right">
+    <span class="hdr-pill">Kostenloser LinkedIn-Check</span>
+  </div>
+</header>
+<div class="prog-wrap"><div class="prog-bar" id="pb"></div></div>
+
+<!-- ───── HERO ───── -->
+<section class="hero" id="hero-section">
+  <img src="https://brandingpeople.de/wp-content/uploads/2024/09/Logo-2-300x128.png" alt="Branding People" style="height:70px;width:auto;display:block;margin:0 auto 32px;filter:brightness(0) invert(1)">
+  <div class="hero-sub">Kostenloser LinkedIn Profil-Check</div>
+  <h1 style="font-family:'Barlow Condensed',Impact,Arial,sans-serif;font-size:54px;font-weight:900;color:white;line-height:1.05;max-width:640px;margin:0 auto">
+    Wie gut ist dein<br><span style="color:var(--pink)">LinkedIn-Profil</span> wirklich?
+  </h1>
+  <p class="hero-desc">Wir rufen dein Profil automatisch ab, analysieren es anhand deiner Ziele und zeigen dir visuell – direkt an deinem Profil – was du optimieren solltest.</p>
+  <div class="hero-stats">
+    <div class="stat-item"><div class="stat-num">50<span class="stat-plus">+</span></div><div class="stat-label">Personal Brands</div></div>
+    <div class="stat-item"><div class="stat-num">100<span class="stat-plus">k+</span></div><div class="stat-label">Tägliche Impressionen</div></div>
+    <div class="stat-item"><div class="stat-num">100<span class="stat-plus">%</span></div><div class="stat-label">Emotionen</div></div>
+  </div>
+  <button class="btn btn-hero" onclick="startCheck()">Jetzt Profil analysieren →</button>
+</section>
+
+<!-- ───── STEPS ───── -->
+<div class="content" id="steps-area" style="display:none">
+
+  <!-- STEP 1 -->
+  <div class="step-card active" id="s1">
+    <div class="step-num"><div class="step-dot">1</div>Schritt 1 von 5</div>
+    <h2>Dein LinkedIn-Profil</h2>
+    <p class="step-desc">Wir rufen dein Profil automatisch ab und analysieren es zusammen mit deinen Antworten auf deine Ziele.</p>
+    <div class="fg">
+      <label class="fl">Dein Name *</label>
+      <input type="text" id="i-name" placeholder="z. B. Anna Müller" autocomplete="name">
+    </div>
+    <div class="fg">
+      <label class="fl">Dein LinkedIn-Profillink *</label>
+      <input type="url" id="i-url" placeholder="https://www.linkedin.com/in/dein-name" oninput="onUrlInput(this.value)">
+      <div class="fetch-row" id="fetch-row" style="display:none"></div>
+    </div>
+
+    <!-- Upload zone (always shown – LinkedIn requires login for auto-fetch) -->
+    <div id="upload-section">
+      <div class="fg" style="margin-top:6px">
+        <label class="fl">Screenshot deines LinkedIn-Profils <span style="color:var(--gray);font-weight:500;text-transform:none;letter-spacing:0">(für die visuelle Analyse)</span></label>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--blue);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px" id="fetch-hint">
+          💡 Öffne dein LinkedIn-Profil im Browser, mache einen Screenshot (<strong>Cmd+Shift+4</strong> auf Mac) und lade ihn hier hoch. So analysieren wir dein Profil direkt.
+        </div>
+        <div class="upzone" id="upzone" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+          <input type="file" accept="image/*" onchange="handleUpload(this)">
+          <div class="up-icon">📸</div>
+          <div class="up-lbl">Screenshot hier ablegen oder klicken</div>
+          <div class="up-sub">Vollständige LinkedIn-Profilseite · PNG oder JPG</div>
+        </div>
+        <img id="up-thumb" class="up-thumb">
+        <div id="up-done" class="up-done">✓ Screenshot hochgeladen – perfekt!</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="valS1()">Weiter →</button>
+    <button class="btn btn-back" onclick="go(0)">← Zurück</button>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card" id="s2">
+    <div class="step-num"><div class="step-dot">2</div>Schritt 2 von 5</div>
+    <h2>Wofür nutzt du LinkedIn?</h2>
+    <p class="step-desc">Wir prüfen, ob dein Profil zu diesen Zielen passt. Mehrere Antworten möglich.</p>
+    <div class="mopts">
+      <div class="mopt" onclick="tog('goals','sales',this)"><div class="cb"></div><div><div class="ot">💼 Sales – Neue Kunden gewinnen</div><div class="os">Leads generieren, Angebote platzieren</div></div></div>
+      <div class="mopt" onclick="tog('goals','sichtbarkeit',this)"><div class="cb"></div><div><div class="ot">👁️ Persönliche Sichtbarkeit</div><div class="os">Als Experte wahrgenommen werden</div></div></div>
+      <div class="mopt" onclick="tog('goals','recruiting',this)"><div class="cb"></div><div><div class="ot">🎯 Recruiting – Talente finden</div><div class="os">Mitarbeiter oder Freelancer gewinnen</div></div></div>
+      <div class="mopt" onclick="tog('goals','unternehmen',this)"><div class="cb"></div><div><div class="ot">🏢 Sichtbarkeit fürs Unternehmen</div><div class="os">Als Markenbotschafter auftreten</div></div></div>
+      <div class="mopt" onclick="tog('goals','thought',this)"><div class="cb"></div><div><div class="ot">🧠 Thought Leadership</div><div class="os">Inhaltlich führend in meiner Branche werden</div></div></div>
+    </div>
+    <span class="free-tog" onclick="toggleFree('gf')">+ Anderes Ziel angeben</span>
+    <div class="free-wrap" id="gf-wrap"><input type="text" id="gf-in" placeholder="Mein Ziel auf LinkedIn ist…" style="margin-top:8px"></div>
+    <button class="btn btn-primary" onclick="valGoals()">Weiter →</button>
+    <button class="btn btn-back" onclick="go(1)">← Zurück</button>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card" id="s3">
+    <div class="step-num"><div class="step-dot">3</div>Schritt 3 von 5</div>
+    <h2>Wie viele Beiträge schreibst du pro Woche?</h2>
+    <p class="step-desc">Wir prüfen, ob deine Aktivität zu deinen Zielen passt.</p>
+    <div class="ropts">
+      <div class="ropt" onclick="selR('posts','0',this)"><span class="rn">0</span>Noch keine</div>
+      <div class="ropt" onclick="selR('posts','1-2',this)"><span class="rn">1–2</span>Gelegentlich</div>
+      <div class="ropt" onclick="selR('posts','3-4',this)"><span class="rn">3–4</span>Regelmäßig</div>
+      <div class="ropt" onclick="selR('posts','5+',this)"><span class="rn">5+</span>Sehr aktiv</div>
+    </div>
+    <button class="btn btn-primary" onclick="nextR('posts',4)">Weiter →</button>
+    <button class="btn btn-back" onclick="go(2)">← Zurück</button>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card" id="s4">
+    <div class="step-num"><div class="step-dot">4</div>Schritt 4 von 5</div>
+    <h2>Was fällt dir auf LinkedIn am schwersten?</h2>
+    <p class="step-desc">Mehrere Antworten möglich.</p>
+    <div class="mopts">
+      <div class="mopt" onclick="tog('ch','schreiben',this)"><div class="cb"></div><div><div class="ot">✍️ Beiträge schreiben</div><div class="os">Ich weiß nicht, wie ich anfangen soll</div></div></div>
+      <div class="mopt" onclick="tog('ch','themen',this)"><div class="cb"></div><div><div class="ot">💡 Themen finden</div><div class="os">Mir fehlt die Inspiration</div></div></div>
+      <div class="mopt" onclick="tog('ch','zeit',this)"><div class="cb"></div><div><div class="ot">⏰ Zu wenig Zeit</div><div class="os">Content-Erstellung fühlt sich aufwendig an</div></div></div>
+      <div class="mopt" onclick="tog('ch','algo',this)"><div class="cb"></div><div><div class="ot">🤖 Den Algorithmus verstehen</div><div class="os">Warum erzielen manche Posts mehr Reichweite?</div></div></div>
+    </div>
+    <span class="free-tog" onclick="toggleFree('cf')">+ Andere Herausforderung</span>
+    <div class="free-wrap" id="cf-wrap"><input type="text" id="cf-in" placeholder="Meine größte Herausforderung ist…" style="margin-top:8px"></div>
+    <button class="btn btn-primary" onclick="valCh()">Weiter →</button>
+    <button class="btn btn-back" onclick="go(3)">← Zurück</button>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card" id="s5">
+    <div class="step-num"><div class="step-dot">5</div>Schritt 5 von 5</div>
+    <h2>Wie ist deine Positionierung?</h2>
+    <p class="step-desc">Beschreibe in einem Satz, wem du hilfst und womit. Wir vergleichen das mit deinem Profil.</p>
+    <div class="fg">
+      <label class="fl">Meine Positionierung</label>
+      <textarea id="pos-txt" placeholder="Ich helfe [Zielgruppe], [Problem zu lösen / Ziel zu erreichen], indem ich [Methode / Angebot]."></textarea>
+    </div>
+    <button class="dkbtn" id="dkbtn" onclick="togDK()"><span style="font-size:20px">🤷</span>Ich weiß es nicht genau</button>
+    <button class="btn btn-primary" onclick="valS5()" style="margin-top:16px">Analyse anzeigen ✨</button>
+    <button class="btn btn-back" onclick="go(4)">← Zurück</button>
+  </div>
+
+  <!-- RESULT -->
+  <div class="step-card" id="result" style="padding:0;overflow:hidden;border:1px solid var(--border)"></div>
+
+</div><!-- /content -->
+
+<script>
+const A = { goals:[], ch:[], dkPos:false };
+let ssUrl = null;
+let ssReady = false;
+
+// ── Init ──────────────────────────────────────────────
+function startCheck(){
+  document.getElementById('hero-section').style.display='none';
+  document.getElementById('steps-area').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── Navigation ─────────────────────────────────────────
+function go(step){
+  if(step===0){
+    document.getElementById('steps-area').style.display='none';
+    document.getElementById('hero-section').style.display='block';
+    document.getElementById('pb').style.width='0';
+    window.scrollTo({top:0,behavior:'smooth'});
+    return;
+  }
+  document.querySelectorAll('.step-card').forEach(c=>c.classList.remove('active'));
+  const el = step==='r' ? document.getElementById('result') : document.getElementById('s'+step);
+  if(el) el.classList.add('active');
+  const pct = step==='r' ? 100 : (step/5)*100;
+  document.getElementById('pb').style.width = pct+'%';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── Inputs ─────────────────────────────────────────────
+function tog(k,v,el){
+  if(!A[k]) A[k]=[];
+  const i=A[k].indexOf(v);
+  if(i===-1){A[k].push(v);el.classList.add('sel');}
+  else{A[k].splice(i,1);el.classList.remove('sel');}
+}
+function selR(k,v,el){
+  A[k]=v;
+  el.closest('.ropts').querySelectorAll('.ropt').forEach(r=>r.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function nextR(k,n){if(!A[k]){alert('Bitte wähle eine Option.');return;}go(n);}
+function toggleFree(id){document.getElementById(id+'-wrap').classList.toggle('on');}
+function togDK(){
+  A.dkPos=!A.dkPos;
+  document.getElementById('dkbtn').classList.toggle('sel',A.dkPos);
+  const t=document.getElementById('pos-txt');
+  t.disabled=A.dkPos; if(A.dkPos) t.value='';
+}
+
+// ── Screenshot auto-fetch ──────────────────────────────
+let fetchDebounce=null;
+function onUrlInput(val){
+  clearTimeout(fetchDebounce);
+  ssUrl=null; ssReady=false;
+  setFetch('');
+  if(val.length>20 && val.includes('linkedin')){
+    fetchDebounce=setTimeout(()=>tryFetch(val.trim()),1000);
+  }
+}
+
+function tryFetch(url){
+  const clean=url.split('?')[0].replace(/\/$/,'');
+  setFetch('loading','Profil wird abgerufen…');
+
+  // Try microlink screenshot API
+  const src1=`https://api.microlink.io/?url=${encodeURIComponent(clean)}&screenshot=true&meta=false&embed=screenshot.url`;
+  const img1=new Image();
+  img1.crossOrigin='anonymous';
+  img1.onload=()=>{ssUrl=src1;ssReady=true;setFetch('ok','✓ Profil erfolgreich abgerufen');};
+  img1.onerror=()=>{
+    // Fallback: thum.io
+    const src2=`https://image.thum.io/get/width/1200/crop/900/${encodeURIComponent(clean)}`;
+    const img2=new Image();
+    img2.onload=()=>{ssUrl=src2;ssReady=true;setFetch('ok','✓ Profil abgerufen');};
+    img2.onerror=()=>{
+      ssReady=false;
+      setFetch('warn','LinkedIn erfordert Login – bitte Screenshot oben hochladen.');
+    };
+    img2.src=src2;
+  };
+  img1.src=src1;
+}
+
+function setFetch(type,msg){
+  const el=document.getElementById('fetch-row');
+  if(!msg){el.innerHTML='';return;}
+  const col=type==='ok'?'var(--green)':type==='warn'?'var(--orange)':'var(--blue)';
+  const icon=type==='loading'?'<div class="spin"></div>':type==='ok'?'<span style="font-size:16px">✅</span>':'<span style="font-size:16px">⚠️</span>';
+  el.innerHTML=`${icon}<span style="color:${col};font-size:13px;font-weight:600">${msg}</span>`;
+}
+
+// ── Upload ─────────────────────────────────────────────
+function handleUpload(inp){
+  const f=inp.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    A.imgData=e.target.result;
+    ssUrl=e.target.result;ssReady=true;
+    const thumb=document.getElementById('up-thumb');
+    thumb.src=e.target.result;thumb.style.display='block';
+    document.getElementById('up-done').style.display='block';
+    document.getElementById('upzone').style.borderColor='var(--green)';
+    setFetch('ok','✓ Screenshot hochgeladen und bereit');
+  };
+  rd.readAsDataURL(f);
+}
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('upzone').classList.remove('drag');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    const inp=document.querySelector('#upzone input');
+    const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;
+    handleUpload(inp);
+  }
+}
+
+// ── Validation ─────────────────────────────────────────
+function valS1(){
+  const n=document.getElementById('i-name').value.trim();
+  const u=document.getElementById('i-url').value.trim();
+  if(!n){alert('Bitte gib deinen Namen ein.');return;}
+  if(!u||!u.includes('linkedin')){alert('Bitte gib einen gültigen LinkedIn-Link ein.');return;}
+  A.name=n; A.url=u;
+  if(!ssReady) tryFetch(u);
+  go(2);
+}
+function valGoals(){
+  const f=document.getElementById('gf-in').value.trim();
+  if(f) A.goalsFree=f;
+  if(!A.goals.length&&!f){alert('Bitte wähle mindestens ein Ziel.');return;}
+  go(3);
+}
+function valCh(){
+  const f=document.getElementById('cf-in').value.trim();
+  if(f) A.chFree=f;
+  if(!A.ch.length&&!f){alert('Bitte wähle mindestens eine Herausforderung.');return;}
+  go(5);
+}
+function valS5(){
+  A.pos=A.dkPos?null:document.getElementById('pos-txt').value.trim();
+  buildResult();
+  go('r');
+}
+
+// ── Build Result ───────────────────────────────────────
+function buildResult(){
+  const g=A.goals;
+  const isSales=g.includes('sales'),isThought=g.includes('thought');
+  const isRecruit=g.includes('recruiting'),isVis=g.includes('sichtbarkeit')||g.includes('unternehmen');
+  const noPos=A.dkPos||!A.pos||A.pos.length<15;
+  const postsNone=A.posts==='0',postsLow=A.posts==='1-2';
+  const fn=A.name.split(' ')[0];
+  const initials=A.name.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
+  const handle=(A.url||'').replace(/.*linkedin\.com\/in\//,'').replace(/\/$/,'').split('?')[0];
+
+  // Score
+  const actPct=A.posts==='5+'?100:A.posts==='3-4'?75:A.posts==='1-2'?40:5;
+  const posPct=noPos?0:A.pos&&A.pos.length>40?100:55;
+  const total=Math.min(99,Math.round(actPct*.4+posPct*.45+(g.length?10:0)*.15));
+  const grade=total>=70?{l:'Gutes Fundament',c:'g-h'}:total>=40?{l:'Klares Potenzial',c:'g-m'}:{l:'Dringend optimieren',c:'g-l'};
+  const sc=total>=70?'#6ee7b7':total>=40?'#fcd34d':'#fca5a5';
+  const r=58,circ=2*Math.PI*r,dash=(total/100)*circ;
+
+  // Annotations (4 areas: banner, photo, headline, about)
+  function makeAnn(num,cls,title,status,body,insight){
+    return {num,cls,title,status,body,insight};
+  }
+
+  // Badge positions on a typical LinkedIn desktop screenshot
+  // banner: top ~12%, center-left → badge at top:12%, left:55%
+  // photo:  top ~36%, left ~9%   → badge at top:38%, left:9%
+  // headline: top ~52%, left ~28% → badge at top:53%, left:32%
+  // about:  top ~72%, left ~8%   → badge at top:72%, left:8%
+  const badgePos=[
+    {top:'13%',left:'55%'}, // 1 banner
+    {top:'38%',left:'9%'},  // 2 photo
+    {top:'53%',left:'33%'}, // 3 headline
+    {top:'72%',left:'8%'},  // 4 about
+  ];
+
+  // 1) Banner
+  const ann1 = isSales||isThought||isVis
+    ? makeAnn(1, noPos?'critical':'warning', '🖼️ Banner-Bild',
+        noPos?'Optimieren':'Prüfen',
+        noPos?'Dein Banner kommuniziert noch keine Botschaft – die erste Fläche, die jeder sieht.':'Für deine Ziele ist der Banner entscheidend.',
+        noPos&&isSales?'✗ Sales-Kunden entscheiden in 3 Sekunden. Ein Standard-Banner signalisiert: "Profil nicht ernst genommen."':'⚠ Zeigt dein Banner auf einen Blick: wer du bist, was du machst? Oder ist es ein generisches Bild?')
+    : makeAnn(1,'warning','🖼️ Banner-Bild','Prüfen',
+        'Kostenloses Werbefenster für deine Botschaft.',
+        '⚠ Nutze diesen Raum für Positionierung, Zielgruppe oder einen starken visuellen Auftritt.');
+
+  // 2) Profilfoto
+  const ann2 = isSales||isThought
+    ? makeAnn(2,'warning','📸 Profilfoto','Prüfen',
+        'Für Sales und Thought Leadership ist Vertrauen die Währung – und beginnt mit deinem Gesicht.',
+        `⚠ ${isSales?'Kunden kaufen von Menschen, denen sie vertrauen. Lächelst du? Wirkt es professionell?':'Als Thought Leader musst du sofort wiedererkennbar sein. Klares Gesicht, neutraler Hintergrund.'}`)
+    : makeAnn(2,'warning','📸 Profilfoto','Prüfen',
+        'Ein professionelles Business-Portrait steigert Profilaufrufe um bis zu 21×.',
+        '⚠ Neutraler Hintergrund · klares Gesicht · Augenkontakt · aktuell · lächeln?');
+
+  // 3) Headline
+  const ann3 = noPos
+    ? makeAnn(3,'critical','✏️ Headline','Optimieren',
+        'Die Headline erscheint überall: Suchergebnisse, Kommentare, Verbindungsanfragen.',
+        '✗ Ohne Positionierung ist deine Headline höchstwahrscheinlich dein Jobtitel – das gibt niemand Grund, auf dein Profil zu klicken.')
+    : isSales
+    ? makeAnn(3,'warning','✏️ Headline','Prüfen',
+        'Sales-Check: Spricht deine Headline deine Zielgruppe direkt an?',
+        `⚠ Statt Jobtitel besser: "Ich helfe [Zielgruppe], [Ergebnis]." – Deine Positionierung lautet: "${A.pos?A.pos.substring(0,50)+'…':'noch nicht definiert'}"`)
+    : makeAnn(3,'warning','✏️ Headline','Prüfen',
+        'Die Headline: das wichtigste Wort-Element nach deinem Namen.',
+        '⚠ Nennt sie einen Nutzen für den Leser – oder nur, wo du arbeitest?');
+
+  // 4) About
+  const ann4 = noPos
+    ? makeAnn(4,'critical','📝 Info-Abschnitt','Optimieren',
+        'Der About-Bereich ist dein Elevator Pitch – oft der erste Text, der wirklich gelesen wird.',
+        '✗ Ohne klare Positionierung fehlt dem About-Bereich die Substanz: Wem hilfst du? Wie? Ergebnis? CTA.')
+    : isSales
+    ? makeAnn(4,'warning','📝 Info-Abschnitt','Prüfen',
+        'Für Sales muss dein About wie eine Landing Page funktionieren.',
+        '⚠ Hat dein Text einen klaren Call-to-Action? Ohne "Schreib mir direkt" oder "Buche ein Gespräch" verschenkst du qualifizierte Besucher.')
+    : makeAnn(4,'warning','📝 Info-Abschnitt','Prüfen',
+        'Beginne mit einem Satz, der deine Zielgruppe sofort anspricht.',
+        '⚠ Kein Lebenslauf-Text. Struktur: Wem hilfst du → Wie → Ergebnis → CTA.');
+
+  const anns=[ann1,ann2,ann3,ann4];
+
+  // Cross-checks
+  const cross=[];
+  if(isSales&&postsNone) cross.push('💡 <strong>Sales + 0 Posts/Woche:</strong> Verkaufen auf LinkedIn basiert auf Vertrauen. Ohne sichtbare Expertise kauft niemand – starte mit 2 Posts/Woche.');
+  if(isThought&&(postsNone||postsLow)) cross.push('💡 <strong>Thought Leadership + wenig Content:</strong> Thought Leader werden durch regelmäßige Sichtbarkeit erkannt. Unter 3 Posts/Woche entsteht kein Expertenstatus.');
+  if(noPos&&isSales) cross.push('💡 <strong>Sales + unklare Positionierung:</strong> Dein Profil kann keine Kunden anziehen, wenn nicht klar ist, wen du ansprichst. Positionierung ist die Basis für alles.');
+  if(noPos&&isThought) cross.push('💡 <strong>Thought Leadership + keine Positionierung:</strong> Für wen bist du Experte? Auf welches Thema? Ohne Antwort verteilst du dich zu weit.');
+  if(isRecruit&&postsNone) cross.push('💡 <strong>Recruiting + kein Content:</strong> Talente folgen Menschen, denen sie vertrauen. Ohne Content wissen potenzielle Bewerber nicht, wie dein Unternehmen ist.');
+  if(A.ch.includes('algo')&&postsNone) cross.push('💡 <strong>Algorithmus verstehen + keine Posts:</strong> Den Algo lernt man nur durch Ausprobieren. 1 Post, Reichweite beobachten, anpassen – Theorie ohne Praxis bringt nichts.');
+
+  // Tips
+  const tips=[];
+  if(noPos) tips.push({p:'h',t:'🎯 Positionierung zuerst – alles andere folgt',b:'Beantworte: Wem hilfst du (konkret)? Womit (dein Ansatz)? Was ist das Ergebnis (messbar)? Wenn du das weißt, optimieren sich Headline, About und Content von selbst.',tag:'Fundament',tc:'t-r'});
+  if(A.ch.includes('schreiben')) tips.push({p:'m',t:'✍️ Hook → Story → Fazit → Frage',b:'Zeile 1: Überraschend oder provokant (Hook). Z. 2–4: Kontext/Story. Schluss: Kernaussage. Ende: Frage ans Netzwerk. 150 Wörter mit starkem Hook schlagen 500 ohne einen.',tag:'Content',tc:'t-b'});
+  if(A.ch.includes('themen')) tips.push({p:'m',t:'💡 5 Content-Kategorien für endlos Ideen',b:(isSales?'Sales: Kundenfehler, Einwände, Vorher/Nachher, "Was ich früher falsch gemacht habe"':isThought?'Thought Lead.: Widerspruch zu Branchenmeinungen, dein Denkprozess, Trends mit deiner Bewertung':'Starte: Learnings, Fehler, Tipps für deine Zielgruppe, Hinter den Kulissen.')+' – Schreibe sonntags 3 Posts auf Vorrat.',tag:'Content',tc:'t-b'});
+  if(A.ch.includes('zeit')) tips.push({p:'m',t:'⏰ 45 Minuten pro Woche reichen',b:'Einmal die Woche 45 Min.: 3 Posts schreiben + planen (Buffer/Later). Täglich 5 Min. Kommentare schreiben bringt oft mehr Reichweite als eigene Posts.',tag:'Effizienz',tc:'t-p'});
+  if(A.ch.includes('algo')) tips.push({p:'l',t:'🤖 Algorithmus: 3 Regeln, die zählen',b:'1. Erste 60 Min. entscheiden – sofort Reaktionen holen. 2. Kommentare schreiben > Liken. 3. Native Formate (Dokumente, Karussells) performen 3× besser als externe Links.',tag:'Reichweite',tc:'t-b'});
+  if(isSales) tips.push({p:'l',t:'💼 Warm-Liste: Leads ohne Kaltakquise',b:'Wer deine Posts regelmäßig kommentiert, ist warmer Kontakt. 3 Monate konsequentes Posten → du hast eine Liste potenzieller Kunden – ohne eine einzige Kaltanfrage.',tag:'Sales',tc:'t-b'});
+  if(isThought&&!postsNone) tips.push({p:'l',t:'🧠 Sei polarisierend (aber fair)',b:'Posts mit klarer These erzielen 3–5× mehr Kommentare. Widersprich einer Branchenmeinung mit Begründung. "Es kommt drauf an" ist keine Meinung – eine klare Position ist es.',tag:'Thought Lead.',tc:'t-p'});
+  if(A.chFree) tips.push({p:'l',t:`💬 Zu deiner Herausforderung: „${A.chFree}"`,b:'Diese Frage schauen wir im persönlichen Gespräch konkret an – damit du eine Lösung bekommst, die zu genau deiner Situation passt.',tag:'Persönlich',tc:'t-p'});
+
+  // Profile center HTML
+  const profHTML = ssReady && ssUrl
+    ? `<div class="screenshot-container" id="ss-container">
+         <img src="${ssUrl}" alt="Dein LinkedIn-Profil" style="width:100%;display:block" onerror="document.getElementById('ss-container').innerHTML=getMockup()">
+         ${badgePos.map((pos,i)=>{
+           const a=anns[i];
+           return `<div class="a-badge ${a.cls}" style="position:absolute;top:${pos.top};left:${pos.left};transform:translate(-50%,-50%);z-index:10" title="${a.title}">
+             <div class="a-badge-inner">${i+1}</div>
+             <div class="badge-label">${a.title}</div>
+           </div>`;
+         }).join('')}
+       </div>`
+    : `<div class="screenshot-container" style="padding:0">${getMockup()}</div>`;
+
+  function getMockup(){
+    return `<div style="background:var(--pink-lt);border:2px dashed var(--pink);border-radius:var(--r);padding:40px 24px;text-align:center">
+      <div style="font-size:48px;margin-bottom:14px">📸</div>
+      <div style="font-size:17px;font-weight:800;color:var(--pink);margin-bottom:8px">Kein Screenshot hochgeladen</div>
+      <div style="font-size:14px;color:#9c1256;line-height:1.6;max-width:360px;margin:0 auto">
+        Für die visuelle Analyse mit nummerierten Markierungen direkt an deinem Profil ist ein Screenshot nötig.<br>
+        <strong>Tipp:</strong> Gehe auf linkedin.com/in/${handle}, mache einen Screenshot und lade ihn in Schritt 1 hoch.
+      </div>
+      <div style="margin-top:18px;display:flex;justify-content:center;gap:14px;flex-wrap:wrap">
+        ${anns.map((a,i)=>`<div style="background:${a.cls==='critical'?'var(--red)':a.cls==='warning'?'var(--orange)':'var(--green)'};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;font-family:'Inter',sans-serif">${i+1}</div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Analysis cards HTML
+  const cardsHTML = anns.map(a=>`
+    <div class="ac-card ${a.cls}">
+      <div class="ac-num">${a.num}</div>
+      <div class="ac-status">${a.status === 'Optimieren' ? '🔴 ' : a.status === 'Prüfen' ? '🟡 ' : '🟢 '}${a.status}</div>
+      <div class="ac-title">${a.title}</div>
+      <div class="ac-body">${a.body}</div>
+      <div class="ac-insight">${a.insight}</div>
+    </div>`).join('');
+
+  const crossHTML = cross.length ? `<div class="cross-section">
+    <h4>🔍 Konsistenz-Check: Passt dein Profil zu deinen Zielen?</h4>
+    ${cross.map(r=>`<div class="cross-row"><span>▸</span><span>${r}</span></div>`).join('')}
+  </div>` : '';
+
+  const tipsHTML = tips.slice(0,6).map((t,i)=>`
+    <div class="tip-card">
+      <div class="tip-n" style="background:${t.p==='h'?'var(--red)':t.p==='m'?'var(--orange)':'var(--green)'}">${i+1}</div>
+      <div><div class="tip-title">${t.t}</div><div class="tip-body">${t.b}</div><span class="tip-tag ${t.tc}">${t.tag}</span></div>
+    </div>`).join('');
+
+  // Save lead locally
+  const sub={id:Date.now(),ts:new Date().toISOString(),name:A.name,url:A.url,goals:A.goals,goalsFree:A.goalsFree||'',posts:A.posts,ch:A.ch,chFree:A.chFree||'',pos:A.pos||'',dkPos:A.dkPos,score:total,hasImg:ssReady};
+  try{const ex=JSON.parse(localStorage.getItem('bp_leads')||'[]');ex.push(sub);localStorage.setItem('bp_leads',JSON.stringify(ex));}catch(e){}
+
+  // Email notification via formsubmit.co (no backend needed)
+  fetch('https://formsubmit.co/ajax/lukas@brandingpeople.de',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({
+      _subject:`🎯 Neuer LinkedIn Profil-Check: ${A.name}`,
+      _captcha:'false',
+      Name: A.name,
+      LinkedIn: A.url,
+      Ziele: (A.goals||[]).join(', ')+(A.goalsFree?` / ${A.goalsFree}`:''),
+      Posts_pro_Woche: A.posts,
+      Herausforderungen: (A.ch||[]).join(', ')+(A.chFree?` / ${A.chFree}`:''),
+      Positionierung: A.pos||(A.dkPos?'Weiß es nicht genau':'–'),
+      Score: `${total}/100`,
+      Datum: new Date().toLocaleString('de-DE')
+    })
+  }).catch(()=>{});
+
+  document.getElementById('result').innerHTML = `
+  <div style="padding:36px 44px">
+    <!-- Score -->
+    <div class="score-banner">
+      <div class="score-ring-box">
+        <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg)">
+          <circle cx="65" cy="65" r="${r}" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="11"/>
+          <circle cx="65" cy="65" r="${r}" fill="none" stroke="${sc}" stroke-width="11"
+            stroke-dasharray="${dash} ${circ-dash}" stroke-linecap="round"
+            style="transition:stroke-dasharray 1.4s cubic-bezier(.4,0,.2,1) .2s"/>
+        </svg>
+        <div class="score-num" id="snum">0</div>
+      </div>
+      <div class="score-info">
+        <div class="grade-pill ${grade.c}">${grade.l}</div>
+        <h3>Dein LinkedIn-Score, ${fn}</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5">Analyse basierend auf deinen Zielen und deinem LinkedIn-Profil.</p>
+      </div>
+    </div>
+
+    <!-- Annotated Profile -->
+    <div class="anno-section">
+      <div class="section-title">📌 Dein Profil – visuell analysiert</div>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:16px">Die nummerierten Markierungen zeigen genau, wo wir Optimierungspotenzial sehen. Die Analyse dazu findest du direkt darunter.</p>
+      <div style="position:relative">${profHTML}</div>
+      <div class="analysis-grid">${cardsHTML}</div>
+    </div>
+
+    ${crossHTML}
+
+    <!-- Tips -->
+    <div class="tips-section">
+      <h3>Deine priorisierten Maßnahmen</h3>
+      ${tipsHTML}
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-box">
+      <img src="https://brandingpeople.de/wp-content/uploads/2024/09/Logo-2-300x128.png" alt="Branding People" style="height:56px;width:auto;display:block;margin:0 auto;filter:brightness(0) invert(1)">
+      <h3>Profil-Transformation in 48 Stunden</h3>
+      <p>Wir setzen alle Maßnahmen für dich um – professionelle Texte, klare Positionierung, vollständiges Profil-Redesign. Damit LinkedIn endlich für dich arbeitet.</p>
+      <a class="cta-btn" href="https://calendly.com/lukas-brandingpeople/linkedin" target="_blank" rel="noopener">
+        Kostenloses Strategiegespräch buchen →
+      </a>
+      <div class="trust-row">
+        <div class="trust-item">⭐ 200+ Profil-Optimierungen</div>
+        <div class="trust-item">✓ 30-Tage-Ergebnis-Garantie</div>
+        <div class="trust-item">⚡ Umsetzung in 48 Stunden</div>
+      </div>
+    </div>
+  </div>`;
+
+  setTimeout(()=>animCount('snum',total),300);
+}
+
+function animCount(id,t){
+  const el=document.getElementById(id);if(!el)return;
+  let c=0,s=t/50;
+  const tm=setInterval(()=>{c=Math.min(c+s,t);el.textContent=Math.round(c);if(c>=t)clearInterval(tm);},22);
+}
+
+// ─── Admin Panel ───────────────────────────────────────────────────────────────
+function showAdmin(){
+  const leads=JSON.parse(localStorage.getItem('bp_leads')||'[]');
+  const scoreColor=s=>s>=75?'#22c55e':s>=50?'#f59e0b':'#ef4444';
+  const rows=leads.length===0
+    ?'<tr><td colspan="5" style="text-align:center;padding:32px;color:#888">Noch keine Leads</td></tr>'
+    :leads.slice().reverse().map(l=>`
+      <tr style="border-bottom:1px solid #2a2a2a;cursor:pointer" onclick="adminDetail(${l.id})">
+        <td style="padding:10px 12px">${new Date(l.ts).toLocaleDateString('de-DE')}</td>
+        <td style="padding:10px 12px;font-weight:600">${l.name||'–'}</td>
+        <td style="padding:10px 12px"><a href="${l.url}" target="_blank" style="color:#60a5fa;font-size:12px">LinkedIn ↗</a></td>
+        <td style="padding:10px 12px">${(l.goals||[]).join(', ')}</td>
+        <td style="padding:10px 12px"><span style="background:${scoreColor(l.score)};color:#fff;padding:2px 10px;border-radius:99px;font-weight:700">${l.score}/100</span></td>
+      </tr>`).join('');
+
+  document.body.innerHTML=`
+  <div style="min-height:100vh;background:#0d0d0d;color:#e5e5e5;font-family:system-ui,sans-serif;padding:32px">
+    <div style="max-width:900px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+        <div style="display:flex;align-items:center;gap:16px">
+          <img src="https://brandingpeople.de/wp-content/uploads/2024/09/Logo-2-300x128.png" style="height:36px;filter:brightness(0) invert(1)">
+          <h1 style="font-size:20px;font-weight:700;margin:0">Admin · LinkedIn Profil-Check</h1>
+        </div>
+        <div style="display:flex;gap:12px">
+          <button onclick="exportCSV()" style="background:#1e40af;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer">CSV Export</button>
+          <button onclick="if(confirm('Alle Leads löschen?')){localStorage.removeItem('bp_leads');showAdmin()}" style="background:#7f1d1d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer">Löschen</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px">
+        <div style="background:#1a1a1a;border-radius:12px;padding:20px;text-align:center">
+          <div style="font-size:32px;font-weight:800;color:#60a5fa">${leads.length}</div>
+          <div style="color:#888;font-size:13px;margin-top:4px">Leads gesamt</div>
+        </div>
+        <div style="background:#1a1a1a;border-radius:12px;padding:20px;text-align:center">
+          <div style="font-size:32px;font-weight:800;color:#22c55e">${leads.filter(l=>new Date(l.ts).toDateString()===new Date().toDateString()).length}</div>
+          <div style="color:#888;font-size:13px;margin-top:4px">Heute</div>
+        </div>
+        <div style="background:#1a1a1a;border-radius:12px;padding:20px;text-align:center">
+          <div style="font-size:32px;font-weight:800;color:#f59e0b">${leads.length?Math.round(leads.reduce((a,l)=>a+l.score,0)/leads.length):0}</div>
+          <div style="color:#888;font-size:13px;margin-top:4px">Ø Score</div>
+        </div>
+      </div>
+      <div style="background:#1a1a1a;border-radius:12px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="background:#111;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.05em">
+              <th style="padding:10px 12px;text-align:left">Datum</th>
+              <th style="padding:10px 12px;text-align:left">Name</th>
+              <th style="padding:10px 12px;text-align:left">Profil</th>
+              <th style="padding:10px 12px;text-align:left">Ziele</th>
+              <th style="padding:10px 12px;text-align:left">Score</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p style="text-align:center;color:#444;font-size:12px;margin-top:20px">Hinweis: Leads sind lokal in diesem Browser gespeichert. <a href="#" onclick="history.back();return false" style="color:#60a5fa">← Zurück zum Tool</a></p>
+    </div>
+  </div>`;
+}
+
+function adminDetail(id){
+  const leads=JSON.parse(localStorage.getItem('bp_leads')||'[]');
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  alert(`Name: ${l.name}\nLinkedIn: ${l.url}\nScore: ${l.score}/100\nZiele: ${(l.goals||[]).join(', ')}\nPosts/Woche: ${l.posts}\nHerausforderungen: ${(l.ch||[]).join(', ')}\nPositionierung: ${l.pos||'–'}\nDatum: ${new Date(l.ts).toLocaleString('de-DE')}`);
+}
+
+function exportCSV(){
+  const leads=JSON.parse(localStorage.getItem('bp_leads')||'[]');
+  const h='Datum,Name,LinkedIn,Ziele,Posts/Wo,Score';
+  const rows=leads.map(l=>[new Date(l.ts).toLocaleDateString('de-DE'),`"${l.name}"`,`"${l.url}"`,`"${(l.goals||[]).join('; ')}"`,l.posts,l.score].join(','));
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent([h,...rows].join('\n'));
+  a.download='leads.csv';a.click();
+}
+
+// Auto-open admin if URL hash is #admin
+if(location.hash==='#admin') showAdmin();
+window.addEventListener('hashchange',()=>{if(location.hash==='#admin')showAdmin();});
+</script>
+</body>
+</html>
