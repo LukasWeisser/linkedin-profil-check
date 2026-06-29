@@ -457,7 +457,19 @@ textarea{resize:vertical;min-height:90px}
 
     </div>
 
-    <div style="display:flex;gap:12px;margin-top:32px">
+    <div style="background:var(--blue-lt);border:1px solid var(--blue);border-radius:var(--r);padding:18px 20px;margin-top:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:14px">📋 Für eine 100% individuelle Analyse – kopiere deine aktuellen Texte direkt aus LinkedIn (optional)</div>
+      <div class="fg">
+        <label class="fl">Dein aktueller Profilslogan <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray)">(direkt unter deinem Namen)</span></label>
+        <input type="text" id="slogan-input" placeholder="z. B. Sales Manager | Ich helfe B2B-Firmen, mehr Kunden zu gewinnen">
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Banner-Text / Tagline <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray)">(falls Text auf deinem Header steht)</span></label>
+        <input type="text" id="banner-input" placeholder="z. B. Personal Branding · LinkedIn Coaching · 200+ Kunden">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:28px">
       <button class="btn btn-back" onclick="go(5)">← Zurück</button>
       <button class="btn btn-primary" onclick="valS6()">Analyse anzeigen ✨</button>
     </div>
@@ -624,6 +636,8 @@ function valS6(){
   const required=['header','slogan','button','employer','focus'];
   const missing=required.filter(k=>!A[k]);
   if(missing.length){alert('Bitte beantworte alle 5 Fragen für eine vollständige Analyse.');return;}
+  A.sloganText = (document.getElementById('slogan-input')||{}).value||'';
+  A.bannerText  = (document.getElementById('banner-input')||{}).value||'';
   buildResult();
   go('r');
 }
@@ -690,29 +704,48 @@ function buildResult(){
         'Ein professionelles Business-Portrait steigert Profilaufrufe um bis zu 21×.',
         '⚠ Neutraler Hintergrund · klares Gesicht · Augenkontakt · aktuell · lächeln?');
 
-  // 3) Headline
-  const ann3 = noPos
-    ? makeAnn(3,'critical','✏️ Headline','Optimieren',
-        'Die Headline erscheint überall: Suchergebnisse, Kommentare, Verbindungsanfragen.',
-        '✗ Ohne Positionierung ist deine Headline höchstwahrscheinlich dein Jobtitel – das gibt niemand Grund, auf dein Profil zu klicken.')
-    : isSales
-    ? makeAnn(3,'warning','✏️ Headline','Prüfen',
-        'Sales-Check: Spricht deine Headline deine Zielgruppe direkt an?',
-        `⚠ Statt Jobtitel besser: "Ich helfe [Zielgruppe], [Ergebnis]." – Deine Positionierung lautet: "${A.pos?A.pos.substring(0,50)+'…':'noch nicht definiert'}"`)
-    : makeAnn(3,'warning','✏️ Headline','Prüfen',
-        'Die Headline: das wichtigste Wort-Element nach deinem Namen.',
-        '⚠ Nennt sie einen Nutzen für den Leser – oder nur, wo du arbeitest?');
+  // 3) Profilslogan (direkt unter dem Namen)
+  const sloganTxt = A.sloganText||'';
+  const sWords = sloganTxt.trim().split(/\s+/).filter(Boolean);
+  const sFirst7 = sWords.slice(0,7).join(' ');
+  const sIsJobOnly = sWords.length>0 && sWords.length<8 && /^(senior |junior |lead |head of |vp |c[tpm]o |chief )?(?:manager|leiter|direktor|consultant|berater|analyst|engineer|developer|designer|spezialist|experte|koordinator|referent)/i.test(sloganTxt);
+  const sMentionsZG = /ich helfe|ich unterst[üu]tze|f[üu]r |damit |hilft /i.test(sloganTxt);
 
-  // 4) About
+  const ann3 = sloganTxt
+    ? (sIsJobOnly
+        ? makeAnn(3,'critical','✏️ Profilslogan','Optimieren',
+            `Dein aktueller Slogan: <em>"${sloganTxt}"</em>`,
+            `✗ Das ist ein reiner Jobtitel. Er erscheint bei JEDEM deiner Kommentare – und gibt niemandem Grund, dein Profil zu besuchen. Formel: "Ich helfe [Zielgruppe], [konkretes Ergebnis] – ohne [typisches Problem]."`)
+        : sMentionsZG
+          ? makeAnn(3,'warning','✏️ Profilslogan','Prüfen',
+              `Dein Slogan: <em>"${sloganTxt}"</em>`,
+              `⚠ Gute Basis! Sind die ersten 6–7 Worte (<em>"${sFirst7}"</em>) stark genug, damit jemand beim Scrollen stoppt? Dieser Text ist deine Visitenkarte unter jedem Kommentar.`)
+          : makeAnn(3,'warning','✏️ Profilslogan','Prüfen',
+              `Dein Slogan: <em>"${sloganTxt}"</em>`,
+              `⚠ Es fehlt die Zielgruppe. ${isSales?'Sales-Kunden müssen sofort erkennen: "Das bin ich, der gemeint ist."':isThought?'Für Thought Leadership muss klar sein, für wen du Experte bist.':'Ergänze: Wem hilfst du konkret?'} Formel: "Ich helfe [Zielgruppe], [Ergebnis]."`)
+      )
+    : noPos
+      ? makeAnn(3,'critical','✏️ Profilslogan','Optimieren',
+          'Der Profilslogan erscheint überall: Suchergebnisse, Kommentare, Verbindungsanfragen.',
+          '✗ Ohne klare Positionierung ist dein Slogan vermutlich dein Jobtitel – das gibt niemanden Grund, auf dein Profil zu klicken.')
+      : isSales
+        ? makeAnn(3,'warning','✏️ Profilslogan','Prüfen',
+            'Sales-Check: Spricht dein Slogan deine Zielgruppe direkt an?',
+            `⚠ Statt Jobtitel besser: "Ich helfe [Zielgruppe], [Ergebnis]." – Deine Positionierung: "${A.pos?A.pos.substring(0,50)+'…':'noch nicht definiert'}"`)
+        : makeAnn(3,'warning','✏️ Profilslogan','Prüfen',
+            'Der Profilslogan: das wichtigste Wort-Element direkt unter deinem Namen.',
+            '⚠ Nennt er einen Nutzen für den Leser – oder nur, wo du arbeitest?');
+
+  // 4) About-Bereich
   const ann4 = noPos
-    ? makeAnn(4,'critical','📝 Info-Abschnitt','Optimieren',
+    ? makeAnn(4,'critical','📝 About-Bereich','Optimieren',
         'Der About-Bereich ist dein Elevator Pitch – oft der erste Text, der wirklich gelesen wird.',
         '✗ Ohne klare Positionierung fehlt dem About-Bereich die Substanz: Wem hilfst du? Wie? Ergebnis? CTA.')
     : isSales
-    ? makeAnn(4,'warning','📝 Info-Abschnitt','Prüfen',
+    ? makeAnn(4,'warning','📝 About-Bereich','Prüfen',
         'Für Sales muss dein About wie eine Landing Page funktionieren.',
         '⚠ Hat dein Text einen klaren Call-to-Action? Ohne "Schreib mir direkt" oder "Buche ein Gespräch" verschenkst du qualifizierte Besucher.')
-    : makeAnn(4,'warning','📝 Info-Abschnitt','Prüfen',
+    : makeAnn(4,'warning','📝 About-Bereich','Prüfen',
         'Beginne mit einem Satz, der deine Zielgruppe sofort anspricht.',
         '⚠ Kein Lebenslauf-Text. Struktur: Wem hilfst du → Wie → Ergebnis → CTA.');
 
@@ -797,31 +830,44 @@ function buildResult(){
     </div>`;
   }
 
+  const bannerTxt = A.bannerText||'';
+  const hasBannerText = bannerTxt.length > 2;
+
   // Header
   const headerCheck = A.header==='ja'
     ? makeCheck('🖼️','Header-Bild','ok',
-        `Dein Banner kommuniziert klar. Stelle sicher, dass das Profilbild keinen wichtigen Text verdeckt – das passiert häufig und fällt Besuchern sofort auf.`,
+        hasBannerText
+          ? `Dein Banner kommuniziert klar. Dein Banner-Text <em>"${bannerTxt}"</em> ist sichtbar. Wichtig: Stelle sicher, dass das Profilbild keinen wichtigen Teil davon verdeckt.`
+          : `Dein Banner kommuniziert klar und professionell. Stelle sicher, dass das Profilbild keinen wichtigen Text verdeckt – das passiert häufig und fällt Besuchern sofort auf.`,
         null)
     : A.header==='teils'
     ? makeCheck('🖼️','Header-Bild','warn',
-        `Dein Banner ist vorhanden, hat aber noch Potenzial. ${isSales?'Sales-Kunden entscheiden in 3 Sekunden – dein Banner ist der erste Eindruck.':isThought?'Als Thought Leader muss dein Banner auf Anhieb zeigen, wofür du stehst.':'Der Banner ist deine kostenlose Werbefläche.'}`,
-        `Zeigt er klar: WER du bist, WEM du hilfst und WAS dich auszeichnet? Ideal: Positionierung + Zielgruppe + ein starkes visuelles Element.`)
+        hasBannerText
+          ? `Dein Banner-Text <em>"${bannerTxt}"</em> ist ausbaufähig. ${isSales?'Sales-Kunden entscheiden in 3 Sekunden.':isThought?'Als Thought Leader muss dein Banner sofort klar machen, wofür du stehst.':'Nutze den Banner als Werbefläche.'} Transportiert dieser Text klar deine Botschaft an deine Zielgruppe?`
+          : `Dein Banner ist vorhanden, hat aber noch Potenzial. ${isSales?'Sales-Kunden entscheiden in 3 Sekunden – dein Banner ist der erste Eindruck.':isThought?'Als Thought Leader muss dein Banner auf Anhieb zeigen, wofür du stehst.':'Der Banner ist deine kostenlose Werbefläche.'}`,
+        `Ideal: Positionierung + Zielgruppe + ein starkes visuelles Element. Prüfe auch: Verdeckt dein Profilbild wichtige Schrift im linken Bereich?`)
     : makeCheck('🖼️','Header-Bild','crit',
-        `Du nutzt keinen Banner oder er hat keine Aussagekraft. Das ist die erste Fläche, die jeder Besucher sieht – und sie ist komplett leer.`,
-        `Erstelle einen Banner mit deiner Positionierung, Zielgruppe und einem klaren Versprechen. Tools: Canva (kostenlos). Größe: 1584 × 396 px.`);
+        `Du nutzt keinen Banner oder er hat keine Aussagekraft. Das ist die erste Fläche, die jeder Besucher sieht – komplett ungenutzt.`,
+        `Erstelle einen Banner mit deiner Positionierung${A.pos?` ("${A.pos.substring(0,40)}…")`:''}, Zielgruppe und einem klaren Versprechen. Tool: Canva (kostenlos), Größe: 1584 × 396 px.`);
 
   // Slogan
   const sloganCheck = A.slogan==='ja'
-    ? makeCheck('✏️','Slogan (unter dem Namen)','ok',
-        `Sehr gut – die ersten 6–7 Worte sind stark. Denk daran: Dieser Text erscheint auch bei jedem Kommentar, den du schreibst. Du machst damit bei jedem Interaktion Werbung für deine Positionierung.`,
+    ? makeCheck('✏️','Profilslogan (unter dem Namen)','ok',
+        sloganTxt
+          ? `Dein Slogan <em>"${sloganTxt}"</em> ist stark positioniert. Dieser Text erscheint bei jedem Kommentar, den du schreibst – du machst damit bei jeder Interaktion Werbung für deine Expertise.`
+          : `Sehr gut – die ersten 6–7 Worte sind stark. Dieser Text erscheint bei jedem Kommentar und in Suchergebnissen.`,
         null)
     : A.slogan==='teils'
-    ? makeCheck('✏️','Slogan (unter dem Namen)','warn',
-        `Dein Slogan ist vorhanden, aber noch zu allgemein. Er erscheint bei JEDEM Kommentar, den du schreibst – und ist damit eines deiner meistgesehenen Textelemente auf LinkedIn.`,
-        `Formel: "Ich helfe [konkrete Zielgruppe] dabei, [konkretes Ergebnis]." Die ersten 6–7 Worte müssen sofort Neugier wecken und die Zielgruppe ansprechen.`)
-    : makeCheck('✏️','Slogan (unter dem Namen)','crit',
-        `Dein Slogan ist nur dein Jobtitel oder zu generisch. Das ist eine der größten verpassten Chancen auf LinkedIn. Bei jedem Kommentar, den du schreibst, sehen Hunderte Menschen diesen Text – und klicken nicht weiter.`,
-        `Ersetze den Jobtitel sofort durch eine zielgruppenspezifische Aussage. Beispiel statt "Sales Manager": "Ich helfe B2B-Unternehmen, ihren Sales-Cycle um 40% zu verkürzen."`);
+    ? makeCheck('✏️','Profilslogan (unter dem Namen)','warn',
+        sloganTxt
+          ? `Dein Slogan <em>"${sloganTxt}"</em>: Er erscheint bei JEDEM Kommentar, den du schreibst. ${!sMentionsZG?'Es fehlt die konkrete Zielgruppe – wem hilfst du?':'Die Zielgruppe ist erkennbar, aber die ersten Worte könnten schärfer sein.'}`
+          : `Dein Slogan ist vorhanden, aber noch zu allgemein. Er erscheint bei JEDEM Kommentar und ist damit eines deiner meistgesehenen Textelemente auf LinkedIn.`,
+        `Formel: "Ich helfe [konkrete Zielgruppe] dabei, [konkretes Ergebnis]." Die ersten 6–7 Worte müssen sofort Neugier wecken.`)
+    : makeCheck('✏️','Profilslogan (unter dem Namen)','crit',
+        sloganTxt
+          ? `Dein aktueller Slogan <em>"${sloganTxt}"</em> ist ${sIsJobOnly?'ein reiner Jobtitel':'zu generisch'}. Bei jedem Kommentar, den du schreibst, sehen Hunderte diesen Text – und haben keinen Grund weiterzuklicken.`
+          : `Dein Slogan ist nur dein Jobtitel oder zu generisch. Bei jedem Kommentar sehen Hunderte diesen Text – und klicken nicht weiter.`,
+        `Ersetze ihn durch eine zielgruppenspezifische Aussage. Beispiel statt "Sales Manager bei XY": "Ich helfe B2B-Unternehmen, ${noPos?'ihre Vertriebsziele zu erreichen':`${A.pos?A.pos.substring(0,35)+'…':'qualifizierte Leads zu gewinnen'}`}."`);
 
   // Button
   const buttonCheck = A.button==='ja'
