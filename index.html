@@ -313,24 +313,10 @@ textarea{resize:vertical;min-height:90px}
   <div class="step-card active" id="s1">
     <div class="step-num"><div class="step-dot">1</div>Schritt 1 von 6</div>
     <h2>Dein LinkedIn-Profil</h2>
-    <p class="step-desc">Füge deinen Link ein und lade einen Screenshot deines vollständigen Profils hoch – inkl. Banner.</p>
+    <p class="step-desc">Lade einen Screenshot deines LinkedIn-Profils hoch – unsere KI liest ihn aus und analysiert ihn automatisch.</p>
 
-    <div class="fg">
-      <label class="fl">Dein Name *</label>
-      <input type="text" id="i-name" placeholder="z. B. Anna Müller" autocomplete="name" oninput="onNameInput(this.value)">
-    </div>
-    <div class="fg" style="margin-bottom:0">
-      <label class="fl">Dein LinkedIn-Profillink *</label>
-      <input type="url" id="i-url" placeholder="https://www.linkedin.com/in/dein-name" oninput="onUrlInput(this.value)">
-    </div>
-
-    <!-- LinkedIn Profil-Karte (erscheint nach URL-Eingabe) -->
-    <div id="profile-preview" style="display:none;margin-top:16px;position:relative"></div>
-    <!-- Versteckter Badge-Container – lädt Profildaten von LinkedIn, wird dann als echte Karte angezeigt -->
-    <div id="li-badge-hidden" style="height:0;overflow:hidden;visibility:hidden;position:absolute"></div>
-
-    <!-- ── Screenshot Upload ── -->
-    <div style="margin-top:20px;border:2px dashed #c8d8ea;border-radius:14px;overflow:hidden;background:#fafcff" id="ss-upload-section">
+    <!-- ── Screenshot Upload – Kern des Tools ── -->
+    <div style="border:2px dashed #c8d8ea;border-radius:14px;overflow:hidden;background:#fafcff" id="ss-upload-section">
 
       <!-- Header -->
       <div style="background:linear-gradient(135deg,#1479BE,#0a5ea0);padding:14px 18px;color:#fff">
@@ -393,19 +379,40 @@ textarea{resize:vertical;min-height:90px}
       </div>
     </div>
 
-    <!-- Slogan-Feld (erscheint nach URL-Eingabe, auto-befüllt wenn möglich) -->
-    <div id="s1-slogan-wrap" style="display:none;margin-top:14px;background:#f8faff;border:1.5px solid #c8daf5;border-radius:12px;padding:16px 18px">
-      <label style="display:block;font-size:11px;font-weight:700;color:#1479BE;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">
-        Dein Profilslogan <span style="font-weight:400;color:#888">(direkt unter deinem Namen – wird automatisch übernommen)</span>
-      </label>
-      <input type="text" id="s1-slogan-input" placeholder="z. B. Ich helfe B2B-Firmen dabei, mehr Kunden über LinkedIn zu gewinnen"
-             oninput="syncSlogan(this.value)"
-             style="width:100%;box-sizing:border-box;border:1px solid #d0dff5;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none">
-      <p style="font-size:12px;color:#888;margin:8px 0 0">
-        Direkt aus LinkedIn kopieren:
-        <a href="#" id="s1-li-link" target="_blank" rel="noopener" style="color:#0a66c2;text-decoration:none;font-weight:600">Profil öffnen ↗</a>
-      </p>
+    <!-- Felder nach Upload – auto-befüllt durch KI, editierbar -->
+    <div id="s1-slogan-wrap" style="display:none;margin-top:14px">
+
+      <!-- Name (KI füllt aus, Nutzer kann korrigieren) -->
+      <div class="fg">
+        <label class="fl">Dein Name <span style="color:#888;font-weight:400">(von KI erkannt – bitte prüfen)</span></label>
+        <input type="text" id="i-name" placeholder="z. B. Anna Müller" autocomplete="name">
+      </div>
+
+      <!-- LinkedIn URL (optional) -->
+      <div class="fg">
+        <label class="fl">Dein LinkedIn-Profillink <span style="color:#888;font-weight:400">(optional)</span></label>
+        <input type="url" id="i-url" placeholder="https://www.linkedin.com/in/dein-name" oninput="onUrlInput(this.value)">
+      </div>
+
+      <!-- Slogan -->
+      <div style="background:#f8faff;border:1.5px solid #c8daf5;border-radius:12px;padding:16px 18px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#1479BE;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">
+          Dein Profilslogan <span style="font-weight:400;color:#888">(von KI erkannt – bitte prüfen)</span>
+        </label>
+        <input type="text" id="s1-slogan-input" placeholder="z. B. Ich helfe B2B-Firmen dabei, mehr Kunden über LinkedIn zu gewinnen"
+               oninput="syncSlogan(this.value)"
+               style="width:100%;box-sizing:border-box;border:1px solid #d0dff5;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none">
+        <p style="font-size:12px;color:#888;margin:8px 0 0">
+          Nicht erkannt?
+          <a href="#" id="s1-li-link" target="_blank" rel="noopener" style="color:#0a66c2;text-decoration:none;font-weight:600">LinkedIn öffnen ↗</a>
+          und direkt kopieren
+        </p>
+      </div>
     </div>
+
+    <!-- LinkedIn badge hidden (Fallback-Datenquelle) -->
+    <div id="li-badge-hidden" style="height:0;overflow:hidden;visibility:hidden;position:absolute"></div>
+    <div id="profile-preview" style="display:none"></div>
 
     <button class="btn btn-primary" id="s1-weiter" onclick="valS1()" disabled style="opacity:.4;cursor:not-allowed;margin-top:16px">Weiter →</button>
     <button class="btn btn-back" onclick="go(0)">← Zurück</button>
@@ -931,18 +938,270 @@ function getResultBadge(){
   `;
 }
 
-function tryFetch(url){ /* nicht mehr benötigt – Badge lädt direkt von LinkedIn */ }
+function tryFetch(url){ /* nicht mehr benötigt */ }
 function setFetch(type,msg){}
 let psPromise=null;
 
+// ═══════════════════════════════════════════════════════
+// SCREENSHOT UPLOAD + KI-ANALYSE
+// ═══════════════════════════════════════════════════════
+
+// Google Gemini API Key – dynamisch aus localStorage (im Admin-Panel einstellbar)
+// Direkt-Fallback: Hier eintragen falls kein Admin-Panel genutzt wird
+// → Kostenlos: https://aistudio.google.com/app/apikey
+const _GEMINI_KEY_HARDCODED = '';
+function getGeminiKey(){ return localStorage.getItem('gemini_api_key') || _GEMINI_KEY_HARDCODED; }
+
+function handleScreenshot(inp){
+  const f=inp.files[0];
+  if(!f||!f.type.startsWith('image/')) return;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    const dataUrl=e.target.result;
+    A.imgData=dataUrl;
+    ssUrl=dataUrl;
+    ssReady=true;
+    // Thumbnail
+    const thumb=document.getElementById('ss-thumb');
+    if(thumb){ thumb.src=dataUrl; thumb.style.display='block'; }
+    document.getElementById('ss-done').style.display='block';
+    document.getElementById('ss-dropzone').style.display='none';
+    // Slogan-Feld einblenden
+    const sw=document.getElementById('s1-slogan-wrap');
+    if(sw) sw.style.display='block';
+    // KI-Analyse oder Fallback
+    if(getGeminiKey()){
+      analyzeProfileWithAI(dataUrl, f.type);
+    } else {
+      // Ohne API Key: Button sofort freischalten
+      const btn=document.getElementById('s1-weiter');
+      if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+    }
+  };
+  rd.readAsDataURL(f);
+}
+
+function handleScreenshotDrop(e){
+  e.preventDefault();
+  const dz=document.getElementById('ss-dropzone');
+  if(dz) dz.classList.remove('ss-drag');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    try{
+      const dt=new DataTransfer();
+      dt.items.add(f);
+      const inp=document.getElementById('ss-file-input');
+      inp.files=dt.files;
+      handleScreenshot(inp);
+    }catch(_){
+      // Fallback für ältere Browser
+      const rd=new FileReader();
+      rd.onload=ev=>{
+        const dataUrl=ev.target.result;
+        A.imgData=dataUrl; ssUrl=dataUrl; ssReady=true;
+        const thumb=document.getElementById('ss-thumb');
+        if(thumb){ thumb.src=dataUrl; thumb.style.display='block'; }
+        document.getElementById('ss-done').style.display='block';
+        document.getElementById('ss-dropzone').style.display='none';
+        const sw=document.getElementById('s1-slogan-wrap');
+        if(sw) sw.style.display='block';
+        if(GEMINI_API_KEY) analyzeProfileWithAI(dataUrl, f.type);
+        else {
+          const btn=document.getElementById('s1-weiter');
+          if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+        }
+      };
+      rd.readAsDataURL(f);
+    }
+  }
+}
+
+function clearScreenshot(){
+  A.imgData=null; A.aiData=null; ssUrl=null; ssReady=false;
+  const done=document.getElementById('ss-done');
+  const thumb=document.getElementById('ss-thumb');
+  const dz=document.getElementById('ss-dropzone');
+  const fi=document.getElementById('ss-file-input');
+  if(done) done.style.display='none';
+  if(thumb){ thumb.style.display='none'; thumb.src=''; }
+  if(dz) dz.style.display='block';
+  if(fi) fi.value='';
+  ['ai-loading-box','ai-result-box'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.remove();
+  });
+  const btn=document.getElementById('s1-weiter');
+  if(btn){btn.disabled=true;btn.style.opacity='.4';btn.style.cursor='not-allowed';}
+}
+
+// ── Google Gemini Vision API (kostenlos, 1500 Analysen/Tag) ─
+async function analyzeProfileWithAI(dataUrl, mimeType){
+  _showAILoading(true);
+  try{
+    const base64=dataUrl.split(',')[1];
+    const mime=mimeType||'image/png';
+    const prompt=`Analysiere diesen LinkedIn-Profil-Screenshot auf Deutsch.
+Antworte AUSSCHLIESSLICH mit validem JSON – kein erklärender Text, keine Markdown-Codeblöcke:
+{
+  "name": "Vollständiger Name der Person (genau wie auf LinkedIn)",
+  "headline": "Slogan/Headline direkt unter dem Namen (genau wie auf LinkedIn)",
+  "company": "Aktuelles Unternehmen oder leer wenn nicht sichtbar",
+  "hasBanner": true,
+  "bannerQuality": "gut",
+  "hasProfilePhoto": true,
+  "photoQuality": "professionell",
+  "connectionCount": "500+",
+  "hasAboutSection": true,
+  "experienceVisible": true,
+  "skillsVisible": true,
+  "recommendationsVisible": true,
+  "overallImpression": "Ein prägnanter Satz zur Gesamtwirkung des Profils"
+}
+Ersetze die Beispielwerte durch echte Daten aus dem Screenshot.
+Für boolesche Felder: true oder false.
+Für bannerQuality: gut, mittel oder fehlt.
+Für photoQuality: professionell, okay oder fehlt.`;
+
+    const resp=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${getGeminiKey()}`,
+      {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          contents:[{
+            parts:[
+              {inline_data:{mime_type:mime, data:base64}},
+              {text:prompt}
+            ]
+          }],
+          generationConfig:{temperature:0.1, maxOutputTokens:600}
+        })
+      }
+    );
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(`HTTP ${resp.status}: ${err.error?.message||'Unbekannt'}`);
+    }
+    const d=await resp.json();
+    let txt=(d.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+    // JSON aus Markdown-Blöcken befreien
+    txt=txt.replace(/^```json?\s*/i,'').replace(/\s*```$/,'').trim();
+    // Ersten JSON-Block extrahieren falls noch Text darum
+    const jsonMatch=txt.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('Kein JSON in Antwort');
+    const json=JSON.parse(jsonMatch[0]);
+    _applyAIResults(json);
+  }catch(err){
+    console.warn('Gemini-Analyse Fehler:',err);
+    _showAILoading(false);
+    _showAIError(err.message);
+    const btn=document.getElementById('s1-weiter');
+    if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+  }
+}
+
+function _applyAIResults(data){
+  _showAILoading(false);
+  A.aiData=data;
+  // Name auto-befüllen
+  if(data.name){
+    A.autoName=data.name;
+    const ni=document.getElementById('i-name');
+    if(ni&&!ni.value) ni.value=data.name;
+  }
+  // Slogan auto-befüllen
+  if(data.headline){
+    A.autoHeadline=data.headline;
+    const f1=document.getElementById('s1-slogan-input');
+    const f6=document.getElementById('slogan-input');
+    if(f1&&!f1.value) f1.value=data.headline;
+    if(f6&&!f6.value) f6.value=data.headline;
+  }
+  _showAIResultBox(data);
+  const btn=document.getElementById('s1-weiter');
+  if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+}
+
+function _showAILoading(show){
+  let box=document.getElementById('ai-loading-box');
+  if(show){
+    if(!box){
+      box=document.createElement('div');
+      box.id='ai-loading-box';
+      box.style.cssText='margin-top:12px;background:#f0f7ff;border:1.5px solid #90c0f0;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;font-size:13px;color:#1479BE;font-weight:600';
+      box.innerHTML='<div style="width:20px;height:20px;border:2.5px solid #1479BE;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>🤖&nbsp; KI analysiert dein LinkedIn-Profil…';
+      const ref=document.getElementById('ss-done');
+      if(ref) ref.insertAdjacentElement('afterend',box);
+    }
+    box.style.display='flex';
+  } else {
+    if(box) box.remove();
+  }
+}
+
+function _showAIError(msg){
+  const old=document.getElementById('ai-result-box');
+  if(old) old.remove();
+  const box=document.createElement('div');
+  box.id='ai-result-box';
+  box.style.cssText='margin-top:12px;background:#fff8f0;border:1.5px solid #f0a060;border-radius:10px;padding:12px 14px;font-size:13px;color:#7a4010';
+  box.innerHTML=`⚠️ KI-Analyse konnte nicht durchgeführt werden – bitte Felder manuell ausfüllen.${msg?`<br><span style="font-size:11px;opacity:.7">${msg}</span>`:''}`;
+  const ref=document.getElementById('ss-done');
+  if(ref) ref.insertAdjacentElement('afterend',box);
+}
+
+function _showAIResultBox(data){
+  const old=document.getElementById('ai-result-box');
+  if(old) old.remove();
+  const check=(v,good,bad)=>v?`<span style="color:#1a6640">${good}</span>`:`<span style="color:#b03030">${bad}</span>`;
+  const items=[
+    ['Banner', data.hasBanner?`✅ ${data.bannerQuality||'Vorhanden'}`:'❌ Fehlt'],
+    ['Profilfoto', data.hasProfilePhoto?`✅ ${data.photoQuality||'Vorhanden'}`:'❌ Fehlt'],
+    ['Über-mich', data.hasAboutSection?'✅ Vorhanden':'❌ Fehlt'],
+    ['Erfahrung', data.experienceVisible?'✅ Sichtbar':'❌ Nicht sichtbar'],
+    ['Skills', data.skillsVisible?'✅ Sichtbar':'❌ Fehlt'],
+    ['Empfehlungen', data.recommendationsVisible?'✅ Vorhanden':'❌ Fehlt'],
+  ];
+  const box=document.createElement('div');
+  box.id='ai-result-box';
+  box.style.cssText='margin-top:12px;background:#f4fdf7;border:1.5px solid #6bcf9f;border-radius:10px;padding:14px 16px';
+  box.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span style="font-size:20px">🤖</span>
+      <div style="font-weight:700;font-size:14px;color:#1a6640">KI-Analyse abgeschlossen</div>
+    </div>
+    ${data.overallImpression?`<div style="font-size:12px;color:#444;font-style:italic;margin-bottom:10px;border-left:3px solid #6bcf9f;padding-left:10px">"${data.overallImpression}"</div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+      ${items.map(([l,v])=>`<div style="background:#fff;border:1px solid #cce8d8;border-radius:7px;padding:6px 10px;font-size:12px">
+        <div style="color:#888;font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-bottom:2px">${l}</div>
+        <div style="font-weight:600;color:#222">${v}</div>
+      </div>`).join('')}
+    </div>
+  `;
+  const ref=document.getElementById('ss-done');
+  if(ref) ref.insertAdjacentElement('afterend',box);
+}
+
+// CSS für Drag-Zustand
+(function(){
+  const s=document.createElement('style');
+  s.textContent='.ss-drag{border-color:#1479BE!important;background:#e8f2ff!important}';
+  document.head.appendChild(s);
+})();
+
 // ── Validation ─────────────────────────────────────────
 function valS1(){
-  const n=document.getElementById('i-name').value.trim();
-  const u=document.getElementById('i-url').value.trim();
-  if(!n){alert('Bitte gib deinen Namen ein.');return;}
-  if(!u||!u.includes('linkedin')){alert('Bitte gib einen gültigen LinkedIn-Link ein.');return;}
-  A.name=n; A.url=u;
-  // Slogan aus Step-1-Feld nach Step-6-Feld übertragen
+  const nField=document.getElementById('i-name');
+  let n=(nField||{value:''}).value.trim()||A.autoName||'';
+  const u=(document.getElementById('i-url')||{value:''}).value.trim();
+  // Screenshot ist Pflicht
+  if(!ssReady){alert('Bitte lade zuerst einen Screenshot deines LinkedIn-Profils hoch.');return;}
+  // Name – aus KI-Analyse übernehmen wenn Feld leer
+  if(!n&&A.aiData&&A.aiData.name) n=A.aiData.name;
+  if(!n){alert('Bitte gib deinen Namen ein (oder lade den Screenshot hoch, damit die KI ihn erkennt).');return;}
+  A.name=n;
+  if(nField) nField.value=n;
+  A.url=u||('https://www.linkedin.com/in/'+A.liVanity);
   const s1Slogan=(document.getElementById('s1-slogan-input')||{value:''}).value.trim();
   if(s1Slogan){
     A.autoHeadline=s1Slogan;
@@ -1119,8 +1378,13 @@ function buildResult(){
   const hasUpload = ssReady && ssUrl && ssUrl.startsWith('data:');
   const hasAutoData = !!(A.cardPhoto || A.autoPhoto || A.autoHeadline || A.name);
 
-  // Profil-Anzeige: immer die LinkedIn-Karte zeigen (ggf. mit hochgeladenem Foto obendrauf)
-  const profHTML = `<div class="screenshot-container" style="padding:0">${getMockup()}</div>`;
+  // Screenshot als primäre Darstellung – annotiertes Mockup als Fallback
+  const profHTML = hasUpload
+    ? `<div class="screenshot-container">
+         <img src="${ssUrl}" alt="Dein LinkedIn-Profil" style="width:100%;display:block;border-radius:var(--r)"
+              onerror="this.parentNode.innerHTML='<div style=padding:20px;color:#888>Screenshot konnte nicht geladen werden</div>'">
+       </div>`
+    : `<div class="screenshot-container" style="padding:0">${getMockup()}</div>`;
 
   function getMockup(){
     if(hasAutoData){
@@ -1466,7 +1730,28 @@ function showAdmin(){
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <p style="text-align:center;color:#444;font-size:12px;margin-top:20px">Hinweis: Leads sind lokal in diesem Browser gespeichert. <a href="#" onclick="history.back();return false" style="color:#60a5fa">← Zurück zum Tool</a></p>
+      <!-- KI API Key Einstellungen -->
+      <div style="background:#1a1a1a;border-radius:12px;padding:24px;margin-top:20px">
+        <h2 style="font-size:15px;font-weight:700;margin:0 0 6px;color:#e5e5e5">⚙️ KI-Analyse Einstellungen</h2>
+        <p style="font-size:12px;color:#888;margin:0 0 14px">Google Gemini API Key (kostenlos, 1500 Analysen/Tag) — <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa">Jetzt holen ↗</a></p>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input id="admin-gemini-key" type="password"
+                 placeholder="AIza…"
+                 value="${localStorage.getItem('gemini_api_key')||''}"
+                 style="flex:1;background:#111;border:1px solid #333;color:#e5e5e5;border-radius:8px;padding:10px 12px;font-size:13px;font-family:monospace">
+          <button onclick="
+            const k=document.getElementById('admin-gemini-key').value.trim();
+            if(k){localStorage.setItem('gemini_api_key',k);alert('✅ Gespeichert! KI-Analyse ist jetzt aktiv.');}
+            else{localStorage.removeItem('gemini_api_key');alert('Key entfernt.');}
+          " style="background:#1e40af;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;white-space:nowrap">Speichern</button>
+          <button onclick="
+            const i=document.getElementById('admin-gemini-key');
+            i.type=i.type==='password'?'text':'password';
+          " style="background:#333;color:#e5e5e5;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px">👁</button>
+        </div>
+        <p style="font-size:11px;color:#555;margin:10px 0 0">Key wird nur in diesem Browser gespeichert – nicht im Quellcode sichtbar.</p>
+      </div>
+      <p style="text-align:center;color:#444;font-size:12px;margin-top:20px">Leads sind lokal in diesem Browser gespeichert. <a href="#" onclick="history.back();return false" style="color:#60a5fa">← Zurück zum Tool</a></p>
     </div>
   </div>`;
 }
